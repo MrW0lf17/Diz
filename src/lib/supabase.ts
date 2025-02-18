@@ -109,4 +109,26 @@ export const getPublicUrl = (bucket: string, path: string) => {
     .from(bucket)
     .getPublicUrl(path)
   return data
-} 
+}
+
+export const signInWithGoogle = async () => {
+  console.log('Attempting Google sign in');
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  });
+  
+  if (error) {
+    console.error('Google sign in error:', error);
+    throw error;
+  }
+  
+  console.log('Google sign in initiated:', data);
+  return data;
+}; 

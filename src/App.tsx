@@ -1,51 +1,51 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { supabase } from './lib/supabase';
 import { AuthProvider } from './contexts/AuthContext';
 import { CoinProvider } from './contexts/CoinContext';
-import Layout from './components/Layout/Layout';
+import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
+import Auth from './pages/Auth';
+import Dashboard from './pages/Dashboard';
 import Generate from './pages/Generate';
 import AIGenerator from './pages/AIGenerator';
 import ImageEditor from './pages/ImageEditor';
-import Auth from './pages/Auth';
 import BgRemove from './pages/BgRemove';
 import Enhance from './pages/Enhance';
 import GenFill from './pages/GenFill';
+import Expand from './pages/Expand';
+import Resize from './pages/Resize';
 import Pricing from './pages/Pricing';
 import Contact from './pages/Contact';
 import Subscribe from './pages/Subscribe';
 import SubscribeSuccess from './pages/SubscribeSuccess';
 import Features from './pages/Features';
 import Documentation from './pages/Documentation';
-import GettingStarted from './pages/Documentation/GettingStarted';
-import Tutorials from './pages/Documentation/Tutorials';
-import BestPractices from './pages/Documentation/BestPractices';
-import FAQs from './pages/Documentation/FAQs';
-import Troubleshooting from './pages/Documentation/Troubleshooting';
+import GettingStarted from './pages/docs/GettingStarted';
+import Tutorials from './pages/docs/Tutorials';
+import BestPractices from './pages/docs/BestPractices';
+import FAQs from './pages/docs/FAQs';
+import Troubleshooting from './pages/docs/Troubleshooting';
 import About from './pages/About';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
 import AIImageGeneration from './pages/AIImageGeneration';
 import Gallery from './pages/Gallery';
-import Dashboard from './pages/Dashboard';
 import MarketAnalyst from './pages/MarketAnalyst';
 import TrendCatcher from './pages/TrendCatcher';
 import IndicatorCreator from './pages/IndicatorCreator';
 import TradingSignal from './pages/TradingSignal';
-import Expand from './pages/Expand';
-import Resize from './pages/Resize';
 import TextToVideo from './pages/TextToVideo';
 import ImageToVideo from './pages/ImageToVideo';
 import Lipsync from './pages/Lipsync';
 import MotionBrush from './pages/MotionBrush';
 import AIChat from './pages/AIChat';
 import Careers from './pages/Careers';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 const router = createBrowserRouter([
   {
@@ -83,8 +83,6 @@ const router = createBrowserRouter([
       { path: '/about', element: <About /> },
       { path: '/blog', element: <Blog /> },
       { path: '/blog/:postId', element: <BlogPost /> },
-      { path: '/privacy', element: <Privacy /> },
-      { path: '/terms', element: <Terms /> },
       { path: '/ai-image-generation', element: <AIImageGeneration /> },
       { path: '/gallery', element: <Gallery /> },
       { path: '/market-analyst', element: <MarketAnalyst /> },
@@ -96,7 +94,10 @@ const router = createBrowserRouter([
       { path: '/lipsync', element: <Lipsync /> },
       { path: '/motion-brush', element: <MotionBrush /> },
       { path: '/ai-chat', element: <AIChat /> },
-      { path: '/careers', element: <Careers /> }
+      { path: '/careers', element: <Careers /> },
+      { path: '/terms-of-service', element: <TermsOfService /> },
+      { path: '/privacy-policy', element: <PrivacyPolicy /> },
+      { path: '/auth/callback', element: <Navigate to="/" /> }
     ]
   }
 ]);
