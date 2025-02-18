@@ -23,20 +23,9 @@ export default defineConfig({
           'mui-core': [
             '@mui/material',
             '@mui/system',
-            '@mui/utils',
-            '@mui/base',
             '@emotion/react',
             '@emotion/styled',
-            '@emotion/cache',
-            '@emotion/utils',
-            '@emotion/serialize',
-            '@emotion/sheet',
-            '@emotion/memoize',
-            '@emotion/hash',
-            '@emotion/unitless',
-            '@emotion/is-prop-valid',
-            'clsx',
-            'prop-types'
+            '@emotion/cache'
           ],
           'mui-icons': ['@mui/icons-material'],
           'three-vendor': ['three'],
@@ -71,28 +60,10 @@ export default defineConfig({
     include: [
       '@mui/material',
       '@mui/system',
-      '@mui/utils',
-      '@mui/base',
       '@emotion/react',
       '@emotion/styled',
-      '@emotion/cache',
-      '@emotion/utils',
-      '@emotion/serialize',
-      '@emotion/sheet',
-      '@emotion/memoize',
-      '@emotion/hash',
-      '@emotion/unitless',
-      '@emotion/is-prop-valid',
-      'clsx',
-      'prop-types'
-    ],
-    esbuildOptions: {
-      mainFields: ['module', 'main'],
-      resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
-      loader: {
-        '.js': 'jsx'
-      }
-    }
+      '@emotion/cache'
+    ]
   },
   resolve: {
     dedupe: ['@mui/material', '@emotion/react', '@emotion/styled']
