@@ -15,6 +15,21 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+          'chart-vendor': ['chart.js', 'react-chartjs-2', 'lightweight-charts'],
+          'utils-vendor': ['axios', 'date-fns', 'uuid', 'clsx'],
+          'animation-vendor': ['framer-motion', 'react-spring', 'lottie-react']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  },
   css: {
     postcss: './postcss.config.js',
   },
