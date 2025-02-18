@@ -19,7 +19,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    flowType: 'pkce'
   },
 });
 
@@ -111,8 +112,8 @@ export const getPublicUrl = (bucket: string, path: string) => {
   return data
 }
 
+// Google OAuth sign in
 export const signInWithGoogle = async () => {
-  console.log('Attempting Google sign in');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -123,12 +124,11 @@ export const signInWithGoogle = async () => {
       },
     },
   });
-  
+
   if (error) {
     console.error('Google sign in error:', error);
     throw error;
   }
-  
-  console.log('Google sign in initiated:', data);
+
   return data;
 }; 
