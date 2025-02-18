@@ -18,49 +18,34 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Core React dependencies
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-            return 'react-vendor';
-          }
-          // Material UI core and styles - keep them together to prevent initialization issues
-          if (id.includes('@mui/material') || 
-              id.includes('@mui/styles') || 
-              id.includes('@mui/system') ||
-              id.includes('@emotion/react') || 
-              id.includes('@emotion/styled')) {
-            return 'mui-core';
-          }
-          // MUI icons in a separate chunk
-          if (id.includes('@mui/icons-material')) {
-            return 'mui-icons';
-          }
-          // Three.js and related
-          if (id.includes('three') && !id.includes('@react-three')) {
-            return 'three-vendor';
-          }
-          if (id.includes('@react-three')) {
-            return 'three-extras';
-          }
-          // Charts
-          if (id.includes('chart.js') || id.includes('lightweight-charts')) {
-            return 'chart-vendor';
-          }
-          // Animation libraries
-          if (id.includes('framer-motion') || id.includes('react-spring') || id.includes('lottie')) {
-            return 'animation-vendor';
-          }
-          // Utils
-          if (id.includes('axios') || id.includes('date-fns') || id.includes('uuid') || id.includes('clsx')) {
-            return 'utils-vendor';
-          }
-          // AI and ML libraries - only chunk if actually imported
-          if (id.includes('@tensorflow/tfjs') && id.includes('node_modules')) {
-            return 'tensorflow';
-          }
-          if (id.includes('@huggingface/inference') && id.includes('node_modules')) {
-            return 'ai-apis';
-          }
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'mui-core': [
+            '@mui/material',
+            '@mui/system',
+            '@mui/utils',
+            '@mui/base',
+            '@emotion/react',
+            '@emotion/styled',
+            '@emotion/cache',
+            '@emotion/utils',
+            '@emotion/serialize',
+            '@emotion/sheet',
+            '@emotion/memoize',
+            '@emotion/hash',
+            '@emotion/unitless',
+            '@emotion/is-prop-valid',
+            'clsx',
+            'prop-types'
+          ],
+          'mui-icons': ['@mui/icons-material'],
+          'three-vendor': ['three'],
+          'three-extras': ['@react-three/fiber', '@react-three/drei'],
+          'chart-vendor': ['chart.js', 'react-chartjs-2', 'lightweight-charts'],
+          'animation-vendor': ['framer-motion', 'react-spring', 'lottie-react'],
+          'utils-vendor': ['axios', 'date-fns', 'uuid'],
+          'tensorflow': ['@tensorflow/tfjs'],
+          'ai-apis': ['@huggingface/inference']
         }
       },
       onwarn(warning, warn) {
@@ -86,9 +71,31 @@ export default defineConfig({
     include: [
       '@mui/material',
       '@mui/system',
+      '@mui/utils',
+      '@mui/base',
       '@emotion/react',
-      '@emotion/styled'
-    ]
+      '@emotion/styled',
+      '@emotion/cache',
+      '@emotion/utils',
+      '@emotion/serialize',
+      '@emotion/sheet',
+      '@emotion/memoize',
+      '@emotion/hash',
+      '@emotion/unitless',
+      '@emotion/is-prop-valid',
+      'clsx',
+      'prop-types'
+    ],
+    esbuildOptions: {
+      mainFields: ['module', 'main'],
+      resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
+      loader: {
+        '.js': 'jsx'
+      }
+    }
+  },
+  resolve: {
+    dedupe: ['@mui/material', '@emotion/react', '@emotion/styled']
   },
   // Environment variable configuration
   envPrefix: 'VITE_'
