@@ -21,17 +21,27 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+          'three-vendor': ['three'],
+          'three-extras': ['@react-three/fiber', '@react-three/drei'],
           'chart-vendor': ['chart.js', 'react-chartjs-2', 'lightweight-charts'],
           'utils-vendor': ['axios', 'date-fns', 'uuid', 'clsx'],
           'animation-vendor': ['framer-motion', 'react-spring', 'lottie-react'],
-          'ai-vendor': ['@tensorflow/tfjs', '@huggingface/inference', 'replicate']
+          'tensorflow': ['@tensorflow/tfjs'],
+          'ai-apis': ['@huggingface/inference']
         }
       }
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
+    target: 'esnext',
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
+    }
   },
   css: {
     postcss: './postcss.config.js',
   },
+  optimizeDeps: {
+    exclude: ['@tensorflow/tfjs']
+  }
 })
