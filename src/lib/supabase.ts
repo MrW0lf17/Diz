@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Get environment variables with fallbacks for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://jqtmyitrcvzaiejhzber.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxdG15aXRyY3Z6YWllamh6YmVyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczODY2MjgwNywiZXhwIjoyMDU0MjM4ODA3fQ.NLXk9BWQW7LKuPIcGe494uUzVk720i5Ibyi3S78k2z8';
+// Get environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+}
 
 console.log('Initializing Supabase with:', {
   url: supabaseUrl,
@@ -14,10 +19,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
-    storage: window.localStorage,
-    storageKey: 'ditoolz-auth',
-    debug: true // Enable debug mode for auth
+    detectSessionInUrl: true
   },
 });
 
