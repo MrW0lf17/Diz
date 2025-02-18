@@ -24,7 +24,8 @@ export default defineConfig({
           'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
           'chart-vendor': ['chart.js', 'react-chartjs-2', 'lightweight-charts'],
           'utils-vendor': ['axios', 'date-fns', 'uuid', 'clsx'],
-          'animation-vendor': ['framer-motion', 'react-spring', 'lottie-react']
+          'animation-vendor': ['framer-motion', 'react-spring', 'lottie-react'],
+          'ai-vendor': ['@tensorflow/tfjs', '@huggingface/inference', 'replicate']
         }
       }
     },
