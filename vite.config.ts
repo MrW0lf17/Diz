@@ -23,9 +23,17 @@ export default defineConfig({
           if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
             return 'react-vendor';
           }
-          // Material UI and emotion
-          if (id.includes('@mui') || id.includes('@emotion')) {
-            return 'mui-vendor';
+          // Material UI core and styles - keep them together to prevent initialization issues
+          if (id.includes('@mui/material') || 
+              id.includes('@mui/styles') || 
+              id.includes('@mui/system') ||
+              id.includes('@emotion/react') || 
+              id.includes('@emotion/styled')) {
+            return 'mui-core';
+          }
+          // MUI icons in a separate chunk
+          if (id.includes('@mui/icons-material')) {
+            return 'mui-icons';
           }
           // Three.js and related
           if (id.includes('three') && !id.includes('@react-three')) {
@@ -74,7 +82,13 @@ export default defineConfig({
     postcss: './postcss.config.js',
   },
   optimizeDeps: {
-    exclude: ['@tensorflow/tfjs']
+    exclude: ['@tensorflow/tfjs'],
+    include: [
+      '@mui/material',
+      '@mui/system',
+      '@emotion/react',
+      '@emotion/styled'
+    ]
   },
   // Environment variable configuration
   envPrefix: 'VITE_'
