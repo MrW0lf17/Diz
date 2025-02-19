@@ -4,6 +4,7 @@ import { RiAiGenerate, RiImageEditLine, RiDownload2Line, RiHistoryLine, RiSave3L
 import { toast } from 'react-hot-toast';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config';
 
 interface GeneratedImage {
   url: string;
@@ -54,7 +55,7 @@ const Generate: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/generate', {
+      const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ const Generate: React.FC = () => {
     
     setIsSaving(true);
     try {
-      const response = await fetch('http://localhost:5000/api/gallery/save', {
+      const response = await fetch(`${API_URL}/api/gallery/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
