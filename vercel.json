@@ -7,5 +7,15 @@
       "source": "/api/(.*)",
       "destination": "your_railway_url/api/$1"
     }
+  ],
+  "routes": [
+    {
+      "src": "/auth/callback",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
   ]
 } 
