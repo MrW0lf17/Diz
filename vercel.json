@@ -4,8 +4,8 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://bck.railway.internal/api/$1"
+      "source": "/api/:path*",
+      "destination": "https://bck.railway.internal/api/:path*"
     },
     {
       "source": "/(.*)",
