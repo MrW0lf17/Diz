@@ -6,14 +6,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { supabase } from '../lib/supabase';
-
-declare global {
-  interface Window {
-    imglyRemoveBackground: {
-      removeBackground: (file: File, options?: { progress?: (name: string, progress: number) => void }) => Promise<Blob>;
-    };
-  }
-}
+import { removeBackground } from '@imgly/background-removal';
 
 const BgRemove: React.FC = () => {
   const navigate = useNavigate();
@@ -26,65 +19,6 @@ const BgRemove: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
-
-  useEffect(() => {
-    // Load the script when component mounts
-    const loadScript = async () => {
-      try {
-        // Check if script is already loaded
-        if (window.imglyRemoveBackground) {
-          setIsScriptLoaded(true);
-          return;
-        }
-
-        const scriptUrl = 'https://cdn.img.ly/packages/imgly/background-removal/1.5.8/bundle/bundle.js';
-        
-        // First, fetch the script to check its availability
-        const response = await fetch(scriptUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch script: ${response.status} ${response.statusText}`);
-        }
-
-        const script = document.createElement('script');
-        script.src = scriptUrl;
-        script.type = 'text/javascript';
-        script.crossOrigin = 'anonymous';
-        script.async = true;
-
-        const loadPromise = new Promise((resolve, reject) => {
-          script.onload = () => {
-            // Add a small delay to ensure the script is fully initialized
-            setTimeout(() => {
-              if (window.imglyRemoveBackground) {
-                resolve(undefined);
-              } else {
-                reject(new Error('Script loaded but background removal is not available'));
-              }
-            }, 100);
-          };
-          script.onerror = (e) => reject(new Error(`Failed to load background removal script: ${e}`));
-        });
-
-        document.head.appendChild(script);
-        await loadPromise;
-        setIsScriptLoaded(true);
-        toast.success('Background removal tool loaded successfully');
-      } catch (error) {
-        console.error('Error loading script:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load background removal tool');
-        toast.error('Failed to load background removal tool. Please try refreshing the page.');
-      }
-    };
-
-    loadScript();
-
-    // Cleanup function
-    return () => {
-      const scripts = document.querySelectorAll('script[src*="background-removal"]');
-      scripts.forEach(script => script.remove());
-    };
-  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -143,18 +77,13 @@ const BgRemove: React.FC = () => {
     event.preventDefault();
     if (!selectedImage) return;
 
-    if (!isScriptLoaded || !window.imglyRemoveBackground) {
-      toast.error('Background removal tool is not ready. Please try again in a moment.');
-      return;
-    }
-
     setIsProcessing(true);
     setError(null);
     setProgress(0);
     
     try {
       // Process the image
-      const processedBlob = await window.imglyRemoveBackground.removeBackground(selectedImage, {
+      const processedBlob = await removeBackground(selectedImage, {
         progress: (_, progressValue) => {
           setProgress(Math.round(progressValue * 100));
         },

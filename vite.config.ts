@@ -17,7 +17,6 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['@imgly/background-removal'],
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
@@ -35,10 +34,7 @@ export default defineConfig({
           'animation-vendor': ['framer-motion', 'react-spring', 'lottie-react'],
           'utils-vendor': ['axios', 'date-fns', 'uuid'],
           'tensorflow': ['@tensorflow/tfjs'],
-          'ai-apis': ['@huggingface/inference']
-        },
-        paths: {
-          '@imgly/background-removal': 'https://cdn.img.ly/packages/imgly/background-removal/1.5.8/bundle/bundle.js'
+          'ai-apis': ['@huggingface/inference', '@imgly/background-removal']
         }
       },
       onwarn(warning, warn) {
@@ -60,13 +56,13 @@ export default defineConfig({
     postcss: './postcss.config.js',
   },
   optimizeDeps: {
-    exclude: ['@tensorflow/tfjs', '@imgly/background-removal'],
     include: [
       '@mui/material',
       '@mui/system',
       '@emotion/react',
       '@emotion/styled',
-      '@emotion/cache'
+      '@emotion/cache',
+      '@imgly/background-removal'
     ]
   },
   resolve: {
