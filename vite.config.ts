@@ -38,7 +38,7 @@ export default defineConfig({
           'ai-apis': ['@huggingface/inference']
         },
         paths: {
-          '@imgly/background-removal': 'https://unpkg.com/@imgly/background-removal/dist/index.js'
+          '@imgly/background-removal': 'https://unpkg.com/@imgly/background-removal@1.5.8/dist/browser/bundle.js'
         }
       },
       onwarn(warning, warn) {
