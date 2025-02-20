@@ -32,4 +32,4 @@ const Callback = () => {
   );
 };
 
-export default Callback; 
+export default Callback;

@@ -15,10 +15,10 @@ interface GenerationOptions {
 const ImageGenerationForm: React.FC<ImageGenerationFormProps> = ({ onGenerate, isLoading }) => {
   const [prompt, setPrompt] = useState('');
   const [options, setOptions] = useState<GenerationOptions>({
-    width: 512,
-    height: 512,
-    steps: 30,
-    guidance: 7.5,
+    width: 1024,
+    height: 1024,
+    steps: 4,
+    guidance: 3.5,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -86,8 +86,8 @@ const ImageGenerationForm: React.FC<ImageGenerationFormProps> = ({ onGenerate, i
           <input
             type="range"
             id="steps"
-            min="20"
-            max="50"
+            min="4"
+            max="8"
             value={options.steps}
             onChange={(e) => setOptions({ ...options, steps: Number(e.target.value) })}
             className="mt-1 block w-full"
@@ -103,7 +103,7 @@ const ImageGenerationForm: React.FC<ImageGenerationFormProps> = ({ onGenerate, i
             type="range"
             id="guidance"
             min="1"
-            max="20"
+            max="10"
             step="0.5"
             value={options.guidance}
             onChange={(e) => setOptions({ ...options, guidance: Number(e.target.value) })}

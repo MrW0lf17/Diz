@@ -47,6 +47,7 @@ import MotionBrush from './pages/MotionBrush';
 import AIChat from './pages/AIChat';
 import Careers from './pages/Careers';
 import Callback from './pages/Auth/Callback';
+import ImageEnhance from './pages/ImageEnhance';
 
 const router = createBrowserRouter([
   {
@@ -61,7 +62,7 @@ const router = createBrowserRouter([
       { path: '/ai-generator', element: <AIGenerator /> },
       { path: '/image-editor', element: <ImageEditor /> },
       { path: '/bg-remove', element: <BgRemove /> },
-      { path: '/enhance', element: <Enhance /> },
+      { path: '/enhance', element: <ImageEnhance /> },
       { path: '/gen-fill', element: <ComingSoon /> },
       { path: '/expand', element: <Expand /> },
       { path: '/resize', element: <Resize /> },

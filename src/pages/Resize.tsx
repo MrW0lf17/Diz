@@ -10,7 +10,7 @@ import { useCoins } from '../contexts/CoinContext';
 import { TOOL_COSTS } from '../config/coinConfig';
 
 const Resize: React.FC = () => {
-  const handleToolAction = useToolAction('/resize');
+  const handleToolAction = useToolAction('resize');
   
   const { user } = useAuth();
   const { balance } = useCoins();
@@ -75,6 +75,9 @@ const Resize: React.FC = () => {
       return;
     }
 
+    console.log('Current balance:', balance);
+    console.log('Tool cost:', TOOL_COSTS['resize']);
+
     if (balance < TOOL_COSTS['resize']) {
       toast.error(`Not enough coins. You need ${TOOL_COSTS['resize']} coins.`);
       return;
@@ -83,7 +86,10 @@ const Resize: React.FC = () => {
     setIsProcessing(true);
     try {
       // First check if user can pay
+      console.log('Attempting to deduct coins...');
       const canProceed = await handleToolAction();
+      console.log('Can proceed:', canProceed);
+
       if (!canProceed) {
         throw new Error('Failed to process payment');
       }
