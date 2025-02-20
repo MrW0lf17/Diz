@@ -38,7 +38,7 @@ const BgRemove: React.FC = () => {
           return;
         }
 
-        const scriptUrl = 'https://unpkg.com/@imgly/background-removal/dist/browser/bundle.js';
+        const scriptUrl = 'https://cdn.img.ly/packages/imgly/background-removal/1.5.8/bundle/bundle.js';
         
         // First, fetch the script to check its availability
         const response = await fetch(scriptUrl);
