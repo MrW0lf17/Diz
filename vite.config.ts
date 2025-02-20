@@ -17,6 +17,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      external: ['@imgly/background-removal'],
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
@@ -34,17 +35,15 @@ export default defineConfig({
           'animation-vendor': ['framer-motion', 'react-spring', 'lottie-react'],
           'utils-vendor': ['axios', 'date-fns', 'uuid'],
           'tensorflow': ['@tensorflow/tfjs'],
-          'ai-apis': ['@huggingface/inference'],
-          'bg-removal': ['@imgly/background-removal']
+          'ai-apis': ['@huggingface/inference']
+        },
+        paths: {
+          '@imgly/background-removal': 'https://unpkg.com/@imgly/background-removal/dist/index.js'
         }
       },
       onwarn(warning, warn) {
         // Ignore eval warnings from dependencies
         if (warning.code === 'EVAL' && warning.id?.includes('three-stdlib')) {
-          return;
-        }
-        // Ignore external module warnings for @imgly/background-removal
-        if (warning.code === 'UNRESOLVED_IMPORT' && warning.source === '@imgly/background-removal') {
           return;
         }
         warn(warning);
@@ -61,14 +60,13 @@ export default defineConfig({
     postcss: './postcss.config.js',
   },
   optimizeDeps: {
-    exclude: ['@tensorflow/tfjs'],
+    exclude: ['@tensorflow/tfjs', '@imgly/background-removal'],
     include: [
       '@mui/material',
       '@mui/system',
       '@emotion/react',
       '@emotion/styled',
-      '@emotion/cache',
-      '@imgly/background-removal'
+      '@emotion/cache'
     ]
   },
   resolve: {
