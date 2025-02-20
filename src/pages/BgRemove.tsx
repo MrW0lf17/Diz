@@ -93,15 +93,12 @@ const BgRemove: React.FC = () => {
       return;
     }
 
-    const canProceed = await handleToolAction();
-    if (!canProceed) return;
-
     setIsProcessing(true);
     setError(null);
     setProgress(0);
     
     try {
-      // Process the image
+      // Process the image first to ensure it works before deducting coins
       const processedBlob = await removeBackground(selectedImage, {
         progress: (_, progressValue) => {
           // Ensure progress is between 0-100
@@ -109,6 +106,12 @@ const BgRemove: React.FC = () => {
           setProgress(Math.round(normalizedProgress));
         },
       });
+
+      // Only deduct coins after successful processing
+      const canProceed = await handleToolAction();
+      if (!canProceed) {
+        throw new Error('Failed to process payment');
+      }
 
       // Convert blob to data URL
       const reader = new FileReader();
