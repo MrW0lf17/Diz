@@ -16,20 +16,20 @@ interface CoinContextType {
 }
 
 type ToolPath = 
-  | '/ai-image-generation'
-  | '/bg-remove'
-  | '/gen-fill'
-  | '/expand'
-  | '/resize'
-  | '/text-to-video'
-  | '/image-to-video'
-  | '/motion-brush'
-  | '/lipsync'
-  | '/market-analyst'
-  | '/trend-catcher'
-  | '/indicator-creator'
-  | '/trading-signal'
-  | '/ai-chat';
+  | 'ai-image-generation'
+  | 'bg-remove'
+  | 'gen-fill'
+  | 'expand'
+  | 'resize'
+  | 'text-to-video'
+  | 'image-to-video'
+  | 'motion-brush'
+  | 'lipsync'
+  | 'market-analyst'
+  | 'trend-catcher'
+  | 'indicator-creator'
+  | 'trading-signal'
+  | 'ai-chat';
 
 export interface CoinPackage {
   id: string;
@@ -80,20 +80,20 @@ export const COIN_PACKAGES: CoinPackage[] = [
 const CoinContext = createContext<CoinContextType | undefined>(undefined);
 
 export const TOOL_COSTS: Record<ToolPath, number> = {
-  '/ai-image-generation': 10,
-  '/bg-remove': 5,
-  '/gen-fill': 15,
-  '/expand': 8,
-  '/resize': 5,
-  '/text-to-video': 20,
-  '/image-to-video': 15,
-  '/motion-brush': 10,
-  '/lipsync': 12,
-  '/market-analyst': 25,
-  '/trend-catcher': 20,
-  '/indicator-creator': 15,
-  '/trading-signal': 18,
-  '/ai-chat': 5
+  'ai-image-generation': 10,
+  'bg-remove': 5,
+  'gen-fill': 15,
+  'expand': 8,
+  'resize': 5,
+  'text-to-video': 20,
+  'image-to-video': 15,
+  'motion-brush': 10,
+  'lipsync': 12,
+  'market-analyst': 25,
+  'trend-catcher': 20,
+  'indicator-creator': 15,
+  'trading-signal': 18,
+  'ai-chat': 5
 };
 
 export const PREMIUM_CONVERSION = {
