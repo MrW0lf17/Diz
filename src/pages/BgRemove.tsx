@@ -85,6 +85,11 @@ const BgRemove: React.FC = () => {
       const response = await fetch('https://bck-production-6927.up.railway.app/api/ai/remove-background', {
         method: 'POST',
         body: formData,
+        headers: {
+          'Accept': 'application/json',
+          'Origin': 'https://diz-nine.vercel.app'
+        },
+        mode: 'cors'
       });
 
       if (!response.ok) {
