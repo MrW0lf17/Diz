@@ -14,7 +14,7 @@ import ImageEditor from './pages/ImageEditor';
 import Auth from './pages/Auth';
 import BgRemove from './pages/BgRemove';
 import Enhance from './pages/Enhance';
-import GenFill from './pages/GenFill';
+import ComingSoon from './pages/ComingSoon';
 import Pricing from './pages/Pricing';
 import Contact from './pages/Contact';
 import Subscribe from './pages/Subscribe';
@@ -62,7 +62,7 @@ const router = createBrowserRouter([
       { path: '/image-editor', element: <ImageEditor /> },
       { path: '/bg-remove', element: <BgRemove /> },
       { path: '/enhance', element: <Enhance /> },
-      { path: '/gen-fill', element: <GenFill /> },
+      { path: '/gen-fill', element: <ComingSoon /> },
       { path: '/expand', element: <Expand /> },
       { path: '/resize', element: <Resize /> },
       { path: '/pricing', element: <Pricing /> },
