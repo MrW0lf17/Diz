@@ -27,20 +27,47 @@ const BgRemove: React.FC = () => {
   useEffect(() => {
     // Fetch user's coin balance
     const fetchUserCoins = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setUserCoins(0);
+        return;
+      }
       
       try {
-        const { data, error } = await supabase
+        // First check if the user has a coin balance record
+        let { data: coinData, error: coinError } = await supabase
           .from('user_coins')
           .select('coins')
           .eq('user_id', user.id)
-          .single();
-          
-        if (error) throw error;
-        setUserCoins(data?.coins || 0);
+          .maybeSingle();
+
+        if (coinError) {
+          console.error('Error fetching coins:', coinError);
+          throw coinError;
+        }
+
+        // If no record exists, create one with default coins
+        if (!coinData) {
+          const { data: newCoinData, error: insertError } = await supabase
+            .from('user_coins')
+            .insert([
+              { user_id: user.id, coins: 0 }
+            ])
+            .select('coins')
+            .single();
+
+          if (insertError) {
+            console.error('Error creating coin record:', insertError);
+            throw insertError;
+          }
+
+          coinData = newCoinData;
+        }
+
+        setUserCoins(coinData?.coins || 0);
       } catch (error) {
-        console.error('Error fetching user coins:', error);
-        toast.error('Failed to fetch coin balance');
+        console.error('Error managing user coins:', error);
+        toast.error('Failed to fetch coin balance. Please try refreshing the page.');
+        setUserCoins(0);
       }
     };
 
