@@ -38,14 +38,28 @@ const BgRemove: React.FC = () => {
           return;
         }
 
+        // First, fetch the script to check its availability
+        const response = await fetch('https://unpkg.com/@imgly/background-removal@1.5.8/dist/umd/bundle.js');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch script: ${response.statusText}`);
+        }
+
         const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@imgly/background-removal@1.5.8/dist/browser/bundle.js';
+        script.src = 'https://unpkg.com/@imgly/background-removal@1.5.8/dist/umd/bundle.js';
+        script.type = 'text/javascript';
         script.crossOrigin = 'anonymous';
         script.async = true;
 
         const loadPromise = new Promise((resolve, reject) => {
-          script.onload = resolve;
-          script.onerror = (error) => reject(new Error('Failed to load background removal script'));
+          script.onload = () => {
+            // Verify the script loaded correctly
+            if (window.imglyRemoveBackground) {
+              resolve(undefined);
+            } else {
+              reject(new Error('Script loaded but background removal is not available'));
+            }
+          };
+          script.onerror = () => reject(new Error('Failed to load background removal script'));
         });
 
         document.head.appendChild(script);
