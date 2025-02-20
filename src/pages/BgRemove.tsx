@@ -82,15 +82,9 @@ const BgRemove: React.FC = () => {
       const formData = new FormData();
       formData.append('file', selectedImage);
 
-      const response = await fetch('https://bck-production-6927.up.railway.app/api/ai/remove-background', {
+      const response = await fetch('/api/ai/remove-background', {
         method: 'POST',
         body: formData,
-        headers: {
-          'Accept': 'application/json',
-          'Origin': window.location.origin,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'omit'
       });
 
       if (!response.ok) {
@@ -106,8 +100,6 @@ const BgRemove: React.FC = () => {
       } else if (data.image_data) {
         setProcessedImage(data.image_data);
         toast.success('Background removed successfully!');
-      } else {
-        throw new Error('No image data received from server');
       }
     } catch (error) {
       console.error('Error processing file:', error);
@@ -198,7 +190,7 @@ const BgRemove: React.FC = () => {
               <NeonButton
                 variant="secondary"
                 size="sm"
-                onClick={() => navigate('/gallery')}
+                onClick={() => navigate('/ai-gallery')}
               >
                 <RiGalleryLine className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">View Gallery</span>
