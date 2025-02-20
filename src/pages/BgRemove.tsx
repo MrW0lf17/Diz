@@ -82,7 +82,7 @@ const BgRemove: React.FC = () => {
       const formData = new FormData();
       formData.append('file', selectedImage);
 
-      const response = await fetch('/api/ai/remove-background', {
+      const response = await fetch('https://bck-production-6927.up.railway.app/api/ai/remove-background', {
         method: 'POST',
         body: formData,
       });
@@ -190,7 +190,7 @@ const BgRemove: React.FC = () => {
               <NeonButton
                 variant="secondary"
                 size="sm"
-                onClick={() => navigate('/ai-gallery')}
+                onClick={() => navigate('/pages/Gallery')}
               >
                 <RiGalleryLine className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">View Gallery</span>
