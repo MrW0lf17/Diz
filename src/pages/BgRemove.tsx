@@ -7,12 +7,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { supabase } from '../lib/supabase';
 import { removeBackground } from '@imgly/background-removal';
+import { useToolAction } from '../hooks/useToolAction';
 
-const COST_PER_REMOVAL = 1; // Cost in coins per background removal
+const COST_PER_REMOVAL = 2; // Cost in coins per background removal
 
 const BgRemove: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const handleToolAction = useToolAction('/bg-remove');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
@@ -45,37 +47,6 @@ const BgRemove: React.FC = () => {
 
     fetchUserCoins();
   }, [user?.id]);
-
-  // Function to deduct coins
-  const deductCoins = async () => {
-    if (!user?.id) {
-      toast.error('Please log in to use this feature');
-      return false;
-    }
-
-    if (userCoins < COST_PER_REMOVAL) {
-      toast.error(`You need ${COST_PER_REMOVAL} coins to remove background. Current balance: ${userCoins}`);
-      return false;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('user_coins')
-        .update({ coins: userCoins - COST_PER_REMOVAL })
-        .eq('user_id', user.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      setUserCoins(data.coins);
-      return true;
-    } catch (error) {
-      console.error('Error deducting coins:', error);
-      toast.error('Failed to process coin payment');
-      return false;
-    }
-  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -134,9 +105,9 @@ const BgRemove: React.FC = () => {
     event.preventDefault();
     if (!selectedImage) return;
 
-    // Check and deduct coins first
-    const coinDeducted = await deductCoins();
-    if (!coinDeducted) return;
+    // Check if user has enough coins before proceeding
+    const canProceed = await handleToolAction();
+    if (!canProceed) return;
 
     setIsProcessing(true);
     setError(null);
@@ -165,21 +136,7 @@ const BgRemove: React.FC = () => {
       setError(message);
       toast.error(message);
       
-      // Refund coins on error
-      try {
-        const { error: refundError } = await supabase
-          .from('user_coins')
-          .update({ coins: userCoins })
-          .eq('user_id', user?.id)
-          .single();
-
-        if (refundError) throw refundError;
-        setUserCoins(userCoins);
-        toast.success('Coins refunded due to error');
-      } catch (refundError) {
-        console.error('Error refunding coins:', refundError);
-        toast.error('Failed to refund coins. Please contact support.');
-      }
+      // The useToolAction hook will handle refunding coins on error
     } finally {
       setIsProcessing(false);
       setProgress(0);
