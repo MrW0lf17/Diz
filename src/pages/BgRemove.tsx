@@ -86,7 +86,10 @@ const BgRemove: React.FC = () => {
         method: 'POST',
         body: formData,
         mode: 'cors',
-        credentials: 'omit'
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
       });
 
       if (!response.ok) {
