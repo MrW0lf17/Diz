@@ -87,7 +87,10 @@ const BgRemove: React.FC = () => {
         body: formData,
         headers: {
           'Accept': 'application/json',
-        }
+          'Origin': window.location.origin,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'omit'
       });
 
       if (!response.ok) {
