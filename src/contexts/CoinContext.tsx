@@ -84,7 +84,7 @@ export const TOOL_COSTS: Record<ToolPath, number> = {
   'bg-remove': 5,
   'gen-fill': 15,
   'expand': 8,
-  'resize': 5,
+  'resize': 3,
   'text-to-video': 20,
   'image-to-video': 15,
   'motion-brush': 10,
