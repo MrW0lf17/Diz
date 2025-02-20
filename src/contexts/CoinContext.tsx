@@ -15,7 +15,7 @@ interface CoinContextType {
   convertToPremium: (days: number) => Promise<boolean>;
 }
 
-type ToolPath = 
+export type ToolPath = 
   | 'ai-image-generation'
   | 'bg-remove'
   | 'gen-fill'
@@ -318,15 +318,22 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const useCoinsForTool = async (toolPath: ToolPath) => {
+    console.log('useCoinsForTool called with path:', toolPath);
+    console.log('Current user:', user?.id);
+    console.log('Current balance:', balance);
+
     if (!user) {
       toast.error('Please sign in to use this tool');
       return false;
     }
 
     const cost = TOOL_COSTS[toolPath];
+    console.log('Tool cost:', cost);
+
     if (!cost) {
       console.error('No cost defined for tool:', toolPath);
-      return true; // Allow free usage if cost isn't defined
+      toast.error('Tool configuration error');
+      return false;  // Don't allow free usage if cost isn't defined
     }
 
     if (balance < cost) {
@@ -334,6 +341,7 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
+    console.log('Attempting to update balance in Supabase...');
     const { error: updateError } = await supabase
       .from('user_coins')
       .update({
@@ -342,10 +350,12 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('user_id', user.id);
 
     if (updateError) {
+      console.error('Failed to update balance:', updateError);
       toast.error('Failed to process coin payment');
       return false;
     }
 
+    console.log('Recording transaction...');
     await supabase
       .from('coin_transactions')
       .insert([{
@@ -356,6 +366,7 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }]);
 
     await refreshBalance();
+    console.log('New balance after refresh:', balance);
     toast.success(`Used ${cost} coins`);
     return true;
   };

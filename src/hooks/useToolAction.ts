@@ -1,14 +1,18 @@
 import { useNavigate } from 'react-router-dom';
-import { useCoins } from '../contexts/CoinContext';
+import { useCoins, ToolPath } from '../contexts/CoinContext';
 import toast from 'react-hot-toast';
-import { ToolPath } from '../contexts/CoinContext';
 
-export const useToolAction = (toolPath: ToolPath) => {
+export const useToolAction = (toolPath: string) => {
   const { useCoinsForTool } = useCoins();
   const navigate = useNavigate();
 
   const handleToolAction = async () => {
-    const hasAccess = await useCoinsForTool(toolPath);
+    console.log('useToolAction called with path:', toolPath);
+    // Remove leading slash if present
+    const normalizedPath = toolPath.replace(/^\//, '') as ToolPath;
+    console.log('Normalized path:', normalizedPath);
+    const hasAccess = await useCoinsForTool(normalizedPath);
+    console.log('Has access:', hasAccess);
     if (!hasAccess) {
       toast.error('Not enough coins for this tool');
       navigate('/dashboard?tab=market');
