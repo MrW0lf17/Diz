@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RiUpload2Line, RiImageEditLine, RiDownload2Line, RiGalleryLine, RiSave3Line } from 'react-icons/ri';
+import { RiUpload2Line, RiImageEditLine, RiDownload2Line, RiGalleryLine, RiSave3Line, RiCoinLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { supabase } from '../lib/supabase';
 import { removeBackground } from '@imgly/background-removal';
+
+const COST_PER_REMOVAL = 1; // Cost in coins per background removal
 
 const BgRemove: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +21,61 @@ const BgRemove: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [userCoins, setUserCoins] = useState(0);
+
+  // Fetch user's coins
+  useEffect(() => {
+    const fetchUserCoins = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_coins')
+          .select('coins')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        setUserCoins(data?.coins || 0);
+      } catch (error) {
+        console.error('Error fetching user coins:', error);
+        toast.error('Failed to fetch your coin balance');
+      }
+    };
+
+    fetchUserCoins();
+  }, [user?.id]);
+
+  // Function to deduct coins
+  const deductCoins = async () => {
+    if (!user?.id) {
+      toast.error('Please log in to use this feature');
+      return false;
+    }
+
+    if (userCoins < COST_PER_REMOVAL) {
+      toast.error(`You need ${COST_PER_REMOVAL} coins to remove background. Current balance: ${userCoins}`);
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_coins')
+        .update({ coins: userCoins - COST_PER_REMOVAL })
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setUserCoins(data.coins);
+      return true;
+    } catch (error) {
+      console.error('Error deducting coins:', error);
+      toast.error('Failed to process coin payment');
+      return false;
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -77,6 +134,10 @@ const BgRemove: React.FC = () => {
     event.preventDefault();
     if (!selectedImage) return;
 
+    // Check and deduct coins first
+    const coinDeducted = await deductCoins();
+    if (!coinDeducted) return;
+
     setIsProcessing(true);
     setError(null);
     setProgress(0);
@@ -103,6 +164,22 @@ const BgRemove: React.FC = () => {
       const message = error instanceof Error ? error.message : 'An error occurred';
       setError(message);
       toast.error(message);
+      
+      // Refund coins on error
+      try {
+        const { error: refundError } = await supabase
+          .from('user_coins')
+          .update({ coins: userCoins })
+          .eq('user_id', user?.id)
+          .single();
+
+        if (refundError) throw refundError;
+        setUserCoins(userCoins);
+        toast.success('Coins refunded due to error');
+      } catch (refundError) {
+        console.error('Error refunding coins:', refundError);
+        toast.error('Failed to refund coins. Please contact support.');
+      }
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -176,15 +253,19 @@ const BgRemove: React.FC = () => {
       >
         <GlassCard variant="cyber" className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-orbitron font-bold bg-gradient-to-r from-neon-cyan via-holographic-teal to-ai-magenta bg-clip-text text-transparent text-center sm:text-left">
+            <div className="w-full sm:w-auto text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-orbitron font-bold bg-gradient-to-r from-neon-cyan via-holographic-teal to-ai-magenta bg-clip-text text-transparent">
                 Remove Background
               </h1>
               <p className="text-futuristic-silver/80 text-sm sm:text-base font-inter max-w-2xl mt-2">
                 Remove backgrounds from your images with AI precision - now processed entirely in your browser!
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <div className="flex items-center gap-2 text-neon-cyan mb-2 sm:mb-0">
+                <RiCoinLine className="w-5 h-5" />
+                <span className="font-orbitron">{userCoins} coins</span>
+              </div>
               <NeonButton
                 variant="secondary"
                 size="sm"
@@ -194,6 +275,11 @@ const BgRemove: React.FC = () => {
                 <span className="hidden sm:inline">View Gallery</span>
               </NeonButton>
             </div>
+          </div>
+          <div className="mt-4 text-center sm:text-left">
+            <p className="text-futuristic-silver/60 text-sm">
+              Cost: {COST_PER_REMOVAL} coin per background removal
+            </p>
           </div>
         </GlassCard>
       </motion.div>
@@ -231,17 +317,17 @@ const BgRemove: React.FC = () => {
                     onChange={handleFileChange}
                     className="hidden"
                   />
-                  <div className="p-8 sm:p-12 text-center">
+                  <div className="p-4 sm:p-8 lg:p-12 text-center">
                     <motion.div
                       animate={{ scale: isDragging ? 1.1 : 1 }}
-                      className="mx-auto w-16 h-16 sm:w-20 sm:h-20 text-neon-cyan/70 mb-4"
+                      className="mx-auto w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 text-neon-cyan/70 mb-4"
                     >
                       <RiUpload2Line className="w-full h-full" />
                     </motion.div>
-                    <h3 className="text-lg sm:text-xl font-orbitron text-futuristic-silver mb-2">
+                    <h3 className="text-base sm:text-lg lg:text-xl font-orbitron text-futuristic-silver mb-2">
                       Drop your image here
                     </h3>
-                    <p className="text-sm text-futuristic-silver/60 font-inter">
+                    <p className="text-xs sm:text-sm text-futuristic-silver/60 font-inter">
                       or click to select from your device
                     </p>
                     <p className="text-xs text-futuristic-silver/40 font-inter mt-2">
@@ -253,10 +339,10 @@ const BgRemove: React.FC = () => {
 
               {/* Preview and Results */}
               {previewImage && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {/* Original Image */}
                   <div>
-                    <h3 className="text-futuristic-silver font-orbitron mb-2">Original Image</h3>
+                    <h3 className="text-futuristic-silver font-orbitron mb-2 text-sm sm:text-base">Original Image</h3>
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-grid-pattern">
                       <img
                         src={previewImage}
@@ -268,7 +354,7 @@ const BgRemove: React.FC = () => {
 
                   {/* Processed Image */}
                   <div>
-                    <h3 className="text-futuristic-silver font-orbitron mb-2">
+                    <h3 className="text-futuristic-silver font-orbitron mb-2 text-sm sm:text-base">
                       {processedImage ? 'Background Removed' : 'Result'}
                     </h3>
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-grid-pattern">
@@ -283,13 +369,17 @@ const BgRemove: React.FC = () => {
                           {isProcessing ? (
                             <div className="text-center">
                               <AILoadingSpinner />
-                              <p className="text-futuristic-silver/60 mt-4">
+                              <p className="text-futuristic-silver/60 mt-4 text-sm">
                                 Processing... {progress}%
                               </p>
                             </div>
                           ) : (
-                            <p className="text-futuristic-silver/60">
+                            <p className="text-futuristic-silver/60 text-sm px-4 text-center">
                               Click "Remove Background" to process
+                              {!user?.id && <span className="block mt-2">Please log in to use this feature</span>}
+                              {user?.id && userCoins < COST_PER_REMOVAL && (
+                                <span className="block mt-2">Not enough coins. You need {COST_PER_REMOVAL} coins.</span>
+                              )}
                             </p>
                           )}
                         </div>
@@ -300,14 +390,14 @@ const BgRemove: React.FC = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap justify-center gap-4">
+              <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
                 {previewImage && !processedImage && (
                   <NeonButton
                     variant="primary"
-                    disabled={isProcessing}
-                    className="w-full sm:w-auto"
+                    disabled={isProcessing || !user?.id || userCoins < COST_PER_REMOVAL}
+                    className="w-full sm:w-auto text-sm sm:text-base"
                   >
-                    <RiImageEditLine className="w-5 h-5 mr-2" />
+                    <RiImageEditLine className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     {isProcessing ? 'Processing...' : 'Remove Background'}
                   </NeonButton>
                 )}
@@ -322,8 +412,9 @@ const BgRemove: React.FC = () => {
                         link.download = 'removed-background.png';
                         link.click();
                       }}
+                      className="w-full sm:w-auto text-sm sm:text-base"
                     >
-                      <RiDownload2Line className="w-5 h-5 mr-2" />
+                      <RiDownload2Line className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                       Download
                     </NeonButton>
 
@@ -331,8 +422,9 @@ const BgRemove: React.FC = () => {
                       onClick={handleSaveToGallery}
                       disabled={isSaving}
                       variant="secondary"
+                      className="w-full sm:w-auto text-sm sm:text-base"
                     >
-                      <RiSave3Line className="w-5 h-5 mr-2" />
+                      <RiSave3Line className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                       {isSaving ? 'Saving...' : 'Save to Gallery'}
                     </NeonButton>
                   </>
@@ -340,7 +432,7 @@ const BgRemove: React.FC = () => {
               </div>
 
               {error && (
-                <div className="text-error text-center p-4 rounded-lg bg-error/10">
+                <div className="text-error text-center p-3 sm:p-4 rounded-lg bg-error/10 text-sm sm:text-base">
                   {error}
                 </div>
               )}
