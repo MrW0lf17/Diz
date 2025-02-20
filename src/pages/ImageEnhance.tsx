@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -18,6 +18,7 @@ const ImageEnhance: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonPosition, setComparisonPosition] = useState(50);
+  const [isDragging, setIsDragging] = useState(false);
   const comparisonRef = useRef<HTMLDivElement>(null);
   const [settings, setSettings] = useState<EnhancementSettings>({
     denoise: 10,
@@ -72,6 +73,7 @@ const ImageEnhance: React.FC = () => {
       if (!response.ok) throw new Error(data.error);
 
       setEnhancedImage(data.result);
+      setShowComparison(true);
       toast.success('Image enhanced successfully!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to enhance image');
@@ -81,13 +83,28 @@ const ImageEnhance: React.FC = () => {
   };
 
   const handleComparisonMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!comparisonRef.current) return;
+    if (!comparisonRef.current || !isDragging) return;
     
     const rect = comparisonRef.current.getBoundingClientRect();
     const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const position = ((x - rect.left) / rect.width) * 100;
     setComparisonPosition(Math.min(Math.max(position, 0), 100));
   };
+
+  useEffect(() => {
+    const handleMouseUp = () => setIsDragging(false);
+    const handleMouseLeave = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [isDragging]);
 
   const handleSettingChange = (setting: keyof EnhancementSettings, value: number) => {
     setSettings(prev => ({
@@ -117,7 +134,7 @@ const ImageEnhance: React.FC = () => {
           </h1>
           <div className="h-1 w-32 bg-gradient-cyber mx-auto mb-4"></div>
           <p className="text-futuristic-silver text-sm md:text-base font-inter max-w-2xl mx-auto leading-relaxed">
-            Leverage advanced AI algorithms to enhance image quality, reduce noise, and improve clarity.
+            Enhance your images with AI-powered tools. Adjust noise reduction, contrast, sharpness, and brightness with precision.
           </p>
         </div>
 
@@ -164,7 +181,9 @@ const ImageEnhance: React.FC = () => {
                 {Object.entries(settings).map(([key, value]) => (
                   <div key={key} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <label className="text-futuristic-silver font-orbitron text-sm uppercase tracking-wider">{key}</label>
+                      <label className="text-futuristic-silver font-orbitron text-sm uppercase tracking-wider">
+                        {key === 'denoise' ? 'Noise Reduction' : key}
+                      </label>
                       <span className="text-holographic-teal font-mono">{value.toFixed(1)}</span>
                     </div>
                     <div className="relative">
@@ -179,6 +198,12 @@ const ImageEnhance: React.FC = () => {
                         className="w-full appearance-none h-1 rounded-full bg-black/50 accent-holographic-teal relative z-10"
                       />
                     </div>
+                    <p className="text-xs text-futuristic-silver/60">
+                      {key === 'denoise' && 'Reduce image noise and graininess'}
+                      {key === 'contrast' && 'Adjust the difference between light and dark areas'}
+                      {key === 'sharpness' && 'Enhance edge definition and detail'}
+                      {key === 'brightness' && 'Control overall image luminosity'}
+                    </p>
                   </div>
                 ))}
                 
@@ -235,6 +260,8 @@ const ImageEnhance: React.FC = () => {
                     <div
                       ref={comparisonRef}
                       className="relative h-full rounded-xl overflow-hidden cursor-col-resize touch-pan-x bg-black/20"
+                      onMouseDown={() => setIsDragging(true)}
+                      onTouchStart={() => setIsDragging(true)}
                       onMouseMove={handleComparisonMove}
                       onTouchMove={handleComparisonMove}
                     >
@@ -244,20 +271,18 @@ const ImageEnhance: React.FC = () => {
                         className="absolute inset-0 w-full h-full object-contain"
                       />
                       <div
-                        className="absolute inset-y-0 left-0 overflow-hidden bg-black/20"
+                        className="absolute inset-y-0 left-0 overflow-hidden"
                         style={{ width: `${comparisonPosition}%` }}
                       >
                         <img
                           src={originalImage}
                           alt="Original"
-                          className="absolute inset-0 w-full h-full object-contain"
+                          className="absolute inset-0 w-[100vw] h-full object-contain"
+                          style={{ maxWidth: 'none' }}
                         />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="font-orbitron text-xs text-white/70 bg-black/50 px-3 py-1 rounded-full">Original</span>
-                        </div>
                       </div>
                       <div
-                        className="absolute inset-y-0 w-0.5 bg-holographic-teal cursor-col-resize"
+                        className="absolute inset-y-0 bg-holographic-teal/50 w-0.5 cursor-col-resize"
                         style={{ left: `${comparisonPosition}%` }}
                       >
                         <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-cyber p-[1px]">
@@ -266,6 +291,14 @@ const ImageEnhance: React.FC = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
                             </svg>
                           </div>
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded-full">
+                          <span className="text-xs font-orbitron text-white/70">Original</span>
+                        </div>
+                        <div className="absolute top-4 right-4 bg-black/70 px-3 py-1 rounded-full">
+                          <span className="text-xs font-orbitron text-white/70">Enhanced</span>
                         </div>
                       </div>
                     </div>
