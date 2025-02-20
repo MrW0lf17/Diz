@@ -276,40 +276,48 @@ const ImageEnhance: React.FC = () => {
                       onMouseMove={handleComparisonMove}
                       onTouchMove={handleComparisonMove}
                     >
-                      <img
-                        src={enhancedImage}
-                        alt="Enhanced"
-                        className="absolute inset-0 w-full h-full object-contain"
-                      />
-                      <div
-                        className="absolute inset-y-0 left-0 overflow-hidden"
-                        style={{ width: `${comparisonPosition}%` }}
-                      >
+                      {/* Container for both images */}
+                      <div className="absolute inset-0 w-full h-full">
+                        {/* Enhanced image (background) */}
                         <img
-                          src={originalImage}
-                          alt="Original"
-                          className="absolute inset-0 w-[100vw] h-full object-contain"
-                          style={{ maxWidth: 'none' }}
+                          src={enhancedImage}
+                          alt="Enhanced"
+                          className="absolute inset-0 w-full h-full object-contain"
                         />
-                      </div>
-                      <div
-                        className="absolute inset-y-0 bg-holographic-teal/50 w-0.5 cursor-col-resize"
-                        style={{ left: `${comparisonPosition}%` }}
-                      >
-                        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-cyber p-[1px]">
-                          <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
-                            <svg className="w-4 h-4 text-holographic-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                            </svg>
+                        {/* Original image (sliding overlay) */}
+                        <div
+                          className="absolute inset-y-0 left-0 overflow-hidden"
+                          style={{ width: `${comparisonPosition}%` }}
+                        >
+                          <div className="absolute inset-0 w-full h-full">
+                            <img
+                              src={originalImage}
+                              alt="Original"
+                              className="absolute inset-0 w-full h-full object-contain"
+                            />
                           </div>
                         </div>
-                      </div>
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded-full">
-                          <span className="text-xs font-orbitron text-white/70">Original</span>
+                        {/* Slider line */}
+                        <div
+                          className="absolute inset-y-0 bg-holographic-teal/50 w-0.5 cursor-col-resize"
+                          style={{ left: `${comparisonPosition}%` }}
+                        >
+                          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-cyber p-[1px] shadow-lg">
+                            <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
+                              <svg className="w-4 h-4 text-holographic-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                              </svg>
+                            </div>
+                          </div>
                         </div>
-                        <div className="absolute top-4 right-4 bg-black/70 px-3 py-1 rounded-full">
-                          <span className="text-xs font-orbitron text-white/70">Enhanced</span>
+                        {/* Labels */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded-full shadow-lg">
+                            <span className="text-xs font-orbitron text-white/70">Original</span>
+                          </div>
+                          <div className="absolute top-4 right-4 bg-black/70 px-3 py-1 rounded-full shadow-lg">
+                            <span className="text-xs font-orbitron text-white/70">Enhanced</span>
+                          </div>
                         </div>
                       </div>
                     </div>
