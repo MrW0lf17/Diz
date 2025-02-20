@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RiUpload2Line, RiImageEditLine, RiDownload2Line, RiGalleryLine, RiSave3Line } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,47 @@ const BgRemove: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+
+  useEffect(() => {
+    // Load the script when component mounts
+    const loadScript = async () => {
+      try {
+        // Check if script is already loaded
+        if (window.imglyRemoveBackground) {
+          setIsScriptLoaded(true);
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@imgly/background-removal@1.5.8/dist/browser/bundle.js';
+        script.crossOrigin = 'anonymous';
+        script.async = true;
+
+        const loadPromise = new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = (error) => reject(new Error('Failed to load background removal script'));
+        });
+
+        document.head.appendChild(script);
+        await loadPromise;
+        setIsScriptLoaded(true);
+      } catch (error) {
+        console.error('Error loading script:', error);
+        toast.error('Failed to load background removal tool. Please try refreshing the page.');
+      }
+    };
+
+    loadScript();
+
+    // Cleanup function
+    return () => {
+      const script = document.querySelector('script[src*="background-removal"]');
+      if (script) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -84,27 +125,18 @@ const BgRemove: React.FC = () => {
     event.preventDefault();
     if (!selectedImage) return;
 
+    if (!isScriptLoaded || !window.imglyRemoveBackground) {
+      toast.error('Background removal tool is not ready. Please try again in a moment.');
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
     setProgress(0);
     
     try {
-      // Load the script dynamically
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@imgly/background-removal@1.5.8/dist/browser/bundle.js';
-      script.async = true;
-      
-      await new Promise((resolve, reject) => {
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
-      });
-
-      // Access the global removeBackground function
-      const { removeBackground } = window.imglyRemoveBackground;
-
       // Process the image
-      const processedBlob = await removeBackground(selectedImage, {
+      const processedBlob = await window.imglyRemoveBackground.removeBackground(selectedImage, {
         progress: (_, progressValue) => {
           setProgress(Math.round(progressValue * 100));
         },
