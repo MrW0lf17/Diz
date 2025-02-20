@@ -22,6 +22,7 @@ import {
   Alert,
   Button,
   Container,
+  Theme,
 } from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import {
@@ -44,6 +45,7 @@ import {
   RiRefreshLine,
   RiSearchLine,
   RiAlertLine,
+  RiCoinLine,
 } from 'react-icons/ri';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -53,6 +55,11 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import SearchIcon from '@mui/icons-material/Search';
 import { useToolAction } from '../hooks/useToolAction';
+import { GTranslate as TranslateIcon } from '@mui/icons-material';
+import styled from '@emotion/styled';
+import { useCoins } from '../contexts/CoinContext';
+import { TOOL_COSTS } from '../config/coinConfig';
+import { styled as muiStyled } from '@mui/material/styles';
 
 // Register ChartJS components
 ChartJS.register(
@@ -85,8 +92,82 @@ interface ChartDataset {
   pointRadius?: number;
 }
 
+// Add Google Translate type definitions
+declare global {
+  interface Window {
+    google: {
+      translate: {
+        TranslateElement: {
+          new (options: {
+            pageLanguage: string;
+            includedLanguages: string;
+            layout: any;
+            autoDisplay: boolean;
+            multilanguagePage?: boolean;
+          }, element: string): void;
+          InlineLayout: {
+            SIMPLE: string;
+          };
+        };
+        translate: (element: HTMLElement) => void;
+      };
+    };
+    googleTranslateElementInit?: () => void;
+  }
+}
+
+// Add styled components for coin display
+const CoinBalanceContainer = muiStyled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '8px 16px',
+  marginBottom: '16px',
+  background: 'rgba(255, 255, 255, 0.1)',
+  borderRadius: '12px',
+  backdropFilter: 'blur(10px)',
+});
+
+const CoinDisplay = muiStyled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  color: '#FFD700',
+  '& svg': {
+    width: '20px',
+    height: '20px',
+  },
+});
+
+const CostDisplay = muiStyled('div')({
+  color: 'rgba(255, 255, 255, 0.7)',
+  fontSize: '0.9rem',
+});
+
+const TranslateButton = muiStyled(Button)({
+  position: 'fixed',
+  right: '16px',
+  top: '16px',
+  zIndex: 1000,
+  background: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(10px)',
+  borderRadius: '50px',
+  padding: '8px 16px',
+  color: 'white',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  '&:hover': {
+    background: 'rgba(255, 255, 255, 0.2)',
+  },
+  '@media (max-width: 600px)': {
+    top: '8px',
+    right: '8px',
+    padding: '6px 12px',
+  }
+});
+
 const TrendCatcher = () => {
   const handleToolAction = useToolAction('/trend-catcher');
+  const { balance } = useCoins();
 
   const [loading, setLoading] = useState(false);
   const [symbol, setSymbol] = useState('BTC');
@@ -508,8 +589,76 @@ Format your response as a JSON array of trend objects with the following structu
     }
   };
 
+  // Add Google Translate initialization
+  useEffect(() => {
+    // Remove any existing Google Translate scripts and elements
+    const existingScript = document.querySelector('script[src*="translate.google.com"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    // Create and add the new script
+    const script = document.createElement('script');
+    script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+    script.async = true;
+    document.body.appendChild(script);
+
+    // Define the callback
+    window.googleTranslateElementInit = () => {
+      new window.google.translate.TranslateElement(
+        {
+          pageLanguage: 'en',
+          includedLanguages: 'ar,bn,zh-CN,fa,fr,de,hi,id,it,ja,ko,ms,pa,ps,pt,ru,es,ta,te,th,tr,ur,vi',
+          layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false,
+          multilanguagePage: true
+        },
+        'google_translate_element'
+      );
+    };
+
+    // Cleanup function
+    return () => {
+      if (existingScript) {
+        existingScript.remove();
+      }
+      const translateElement = document.getElementById('google_translate_element');
+      if (translateElement) {
+        translateElement.innerHTML = '';
+      }
+      delete window.googleTranslateElementInit;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-gray-900 text-light relative overflow-hidden">
+      {/* Add Google Translate button and container */}
+      <div className="translate-container" style={{ position: 'relative' }}>
+        <TranslateButton
+          startIcon={<TranslateIcon />}
+          onClick={() => {
+            const translateElement = document.getElementById('google_translate_element');
+            if (translateElement) {
+              const translateButton = translateElement.querySelector('.goog-te-gadget-simple');
+              if (translateButton instanceof HTMLElement) {
+                translateButton.click();
+              }
+            }
+          }}
+        >
+          Translate
+        </TranslateButton>
+        <div 
+          id="google_translate_element" 
+          style={{ 
+            position: 'fixed',
+            top: '70px',
+            right: '20px',
+            zIndex: 1000,
+          }} 
+        />
+      </div>
+
       {/* Futuristic background elements */}
       <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
       <div className="absolute inset-0 flex items-center justify-center">
@@ -532,6 +681,17 @@ Format your response as a JSON array of trend objects with the following structu
               </p>
             </div>
             
+            {/* Add coin balance display */}
+            <CoinBalanceContainer>
+              <CoinDisplay>
+                <RiCoinLine />
+                <Typography>{balance} coins</Typography>
+              </CoinDisplay>
+              <CostDisplay>
+                Cost: {TOOL_COSTS['trend-catcher']} coins per analysis
+              </CostDisplay>
+            </CoinBalanceContainer>
+
             <div className="flex flex-wrap gap-4 items-center justify-end">
               <input
                 type="text"
