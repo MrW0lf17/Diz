@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useToolAction } from '../hooks/useToolAction';
+import { useAuth } from '../contexts/AuthContext';
+import { useCoins } from '../contexts/CoinContext';
+import { TOOL_COSTS } from '../config/coinConfig';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { RiCoinLine } from 'react-icons/ri';
 import {
   Card,
   CardContent,
@@ -187,7 +193,10 @@ const styles = {
 };
 
 const MarketAnalyst: React.FC = () => {
-  const handleToolAction = useToolAction('/market-analyst');
+  const handleToolAction = useToolAction('market-analyst');
+  const { user } = useAuth();
+  const { balance } = useCoins();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [symbol, setSymbol] = useState('');
@@ -581,15 +590,29 @@ Format your response as a JSON object with the following structure:
       return;
     }
 
+    if (!user) {
+      toast.error('Please log in to use this feature');
+      return;
+    }
+
+    if (balance < TOOL_COSTS['market-analyst']) {
+      toast.error(`Not enough coins. You need ${TOOL_COSTS['market-analyst']} coins.`);
+      navigate('/shop');
+      return;
+    }
+
     setLoading(true);
     try {
-      // 1. Fetch market data
+      // First check if user can pay
+      const canProceed = await handleToolAction();
+      if (!canProceed) {
+        throw new Error('Failed to process payment');
+      }
+
+      // Only proceed with analysis after successful payment
       const marketData = await fetchMarketData(symbol, timeFrame);
-      
-      // 2. Get AI analysis
       const analysis = await getAIAnalysis(symbol, marketData);
       
-      // 3. Update state with analysis results
       setAnalysisData({
         marketData,
         analysis,
@@ -608,8 +631,10 @@ Format your response as a JSON object with the following structure:
         },
       });
     } catch (error) {
-      setError('Failed to analyze market data. Please try again.');
       console.error('Analysis error:', error);
+      const message = error instanceof Error ? error.message : 'Failed to analyze market data. Please try again.';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -626,6 +651,28 @@ Format your response as a JSON object with the following structure:
         >
           AI Market Analyst
         </Typography>
+
+        {/* Add coin balance display */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          gap: 2,
+          mb: 4 
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: '#2196F3'
+          }}>
+            <RiCoinLine />
+            <Typography>{balance} coins</Typography>
+          </Box>
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+            Cost: {TOOL_COSTS['market-analyst']} coins per analysis
+          </Typography>
+        </Box>
 
         {/* Input Form */}
         <Paper sx={{ 
