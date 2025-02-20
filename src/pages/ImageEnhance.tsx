@@ -36,6 +36,9 @@ const ImageEnhance: React.FC = () => {
       return;
     }
 
+    setEnhancedImage(null);
+    setShowComparison(false);
+
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
@@ -73,7 +76,9 @@ const ImageEnhance: React.FC = () => {
       if (!response.ok) throw new Error(data.error);
 
       setEnhancedImage(data.result);
-      setShowComparison(true);
+      if (originalImage && data.result) {
+        setShowComparison(true);
+      }
       toast.success('Image enhanced successfully!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to enhance image');
@@ -81,6 +86,12 @@ const ImageEnhance: React.FC = () => {
       setIsProcessing(false);
     }
   };
+
+  useEffect(() => {
+    if (!originalImage || !enhancedImage) {
+      setShowComparison(false);
+    }
+  }, [originalImage, enhancedImage]);
 
   const handleComparisonMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!comparisonRef.current || !isDragging) return;
@@ -311,28 +322,37 @@ const ImageEnhance: React.FC = () => {
                       />
                     </div>
                   )
-                ) : (
-                  <div className="h-full flex items-center justify-center text-futuristic-silver/60">
-                    {isProcessing ? (
-                      <div className="flex flex-col items-center space-y-4">
-                        <div className="relative">
-                          <div className="w-16 h-16 rounded-full border-2 border-holographic-teal/20"></div>
-                          <motion.div
-                            className="absolute inset-0 rounded-full border-2 border-transparent border-t-holographic-teal"
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          />
+                ) : originalImage ? (
+                  <div className="relative h-full rounded-xl overflow-hidden bg-black/20">
+                    <img
+                      src={originalImage}
+                      alt="Original"
+                      className="w-full h-full object-contain"
+                    />
+                    {isProcessing && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="flex flex-col items-center space-y-4">
+                          <div className="relative">
+                            <div className="w-16 h-16 rounded-full border-2 border-holographic-teal/20"></div>
+                            <motion.div
+                              className="absolute inset-0 rounded-full border-2 border-transparent border-t-holographic-teal"
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            />
+                          </div>
+                          <p className="font-orbitron text-sm text-white">Processing Enhancement</p>
                         </div>
-                        <p className="font-orbitron text-sm">Processing Enhancement</p>
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <svg className="w-16 h-16 mx-auto mb-4 text-futuristic-silver/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p className="font-orbitron text-sm">Upload an image to begin</p>
                       </div>
                     )}
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-futuristic-silver/60">
+                    <div className="text-center">
+                      <svg className="w-16 h-16 mx-auto mb-4 text-futuristic-silver/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="font-orbitron text-sm">Upload an image to begin</p>
+                    </div>
                   </div>
                 )}
               </div>
