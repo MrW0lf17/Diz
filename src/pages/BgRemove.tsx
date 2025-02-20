@@ -17,6 +17,7 @@ const BgRemove: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -77,30 +78,27 @@ const BgRemove: React.FC = () => {
 
     setIsProcessing(true);
     setError(null);
+    setProgress(0);
     
     try {
-      const formData = new FormData();
-      formData.append('file', selectedImage);
+      // Import rembg-web dynamically
+      const { removeBackground } = await import('@imgly/background-removal');
 
-      const response = await fetch('https://bck-production-6927.up.railway.app/api/ai/remove-background', {
-        method: 'POST',
-        body: formData,
+      // Process the image
+      const processedBlob = await removeBackground(selectedImage, {
+        progress: (...args: any[]) => {
+          const progressValue = args[1] as number;
+          setProgress(Math.round(progressValue * 100));
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to remove background');
-      }
-
-      const data = await response.json();
-      
-      if (data.processed_url) {
-        setProcessedImage(data.processed_url);
+      // Convert blob to data URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProcessedImage(reader.result as string);
         toast.success('Background removed successfully!');
-      } else if (data.image_data) {
-        setProcessedImage(data.image_data);
-        toast.success('Background removed successfully!');
-      }
+      };
+      reader.readAsDataURL(processedBlob);
     } catch (error) {
       console.error('Error processing file:', error);
       const message = error instanceof Error ? error.message : 'An error occurred';
@@ -108,6 +106,7 @@ const BgRemove: React.FC = () => {
       toast.error(message);
     } finally {
       setIsProcessing(false);
+      setProgress(0);
     }
   };
 
@@ -183,14 +182,14 @@ const BgRemove: React.FC = () => {
                 Remove Background
               </h1>
               <p className="text-futuristic-silver/80 text-sm sm:text-base font-inter max-w-2xl mt-2">
-                Remove backgrounds from your images with AI precision.
+                Remove backgrounds from your images with AI precision - now processed entirely in your browser!
               </p>
             </div>
             <div className="flex gap-2">
               <NeonButton
                 variant="secondary"
                 size="sm"
-                onClick={() => navigate('/pages/Gallery')}
+                onClick={() => navigate('/gallery')}
               >
                 <RiGalleryLine className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">View Gallery</span>
@@ -253,116 +252,99 @@ const BgRemove: React.FC = () => {
                 </div>
               </motion.div>
 
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-xs sm:text-sm font-inter"
-                >
-                  {error}
-                </motion.div>
+              {/* Preview and Results */}
+              {previewImage && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Original Image */}
+                  <div>
+                    <h3 className="text-futuristic-silver font-orbitron mb-2">Original Image</h3>
+                    <div className="relative aspect-square rounded-lg overflow-hidden bg-grid-pattern">
+                      <img
+                        src={previewImage}
+                        alt="Original"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Processed Image */}
+                  <div>
+                    <h3 className="text-futuristic-silver font-orbitron mb-2">
+                      {processedImage ? 'Background Removed' : 'Result'}
+                    </h3>
+                    <div className="relative aspect-square rounded-lg overflow-hidden bg-grid-pattern">
+                      {processedImage ? (
+                        <img
+                          src={processedImage}
+                          alt="Processed"
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          {isProcessing ? (
+                            <div className="text-center">
+                              <AILoadingSpinner />
+                              <p className="text-futuristic-silver/60 mt-4">
+                                Processing... {progress}%
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-futuristic-silver/60">
+                              Click "Remove Background" to process
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* Image Preview Section */}
-              <AnimatePresence mode="wait">
-                {(previewImage || processedImage) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
+              {/* Action Buttons */}
+              <div className="flex flex-wrap justify-center gap-4">
+                {previewImage && !processedImage && (
+                  <NeonButton
+                    variant="primary"
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto"
                   >
-                    {previewImage && (
-                      <div>
-                        <h4 className="text-sm font-orbitron text-futuristic-silver mb-2">
-                          Original Image
-                        </h4>
-                        <GlassCard variant="dark" className="overflow-hidden">
-                          <div className="aspect-square relative">
-                            <img
-                              src={previewImage}
-                              alt="Original"
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                        </GlassCard>
-                      </div>
-                    )}
-
-                    {processedImage && (
-                      <div>
-                        <h4 className="text-sm font-orbitron text-futuristic-silver mb-2">
-                          Processed Image
-                        </h4>
-                        <GlassCard variant="dark" className="overflow-hidden">
-                          <div className="aspect-square relative">
-                            <img
-                              src={processedImage}
-                              alt="Processed"
-                              className="w-full h-full object-contain"
-                            />
-                            <div className="absolute top-2 right-2 flex gap-2">
-                              <NeonButton
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = processedImage;
-                                  link.download = 'processed-image.png';
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                  toast.success('Image downloaded successfully!');
-                                }}
-                              >
-                                <RiDownload2Line className="w-4 h-4" />
-                              </NeonButton>
-                              <NeonButton
-                                variant="primary"
-                                size="sm"
-                                onClick={handleSaveToGallery}
-                                disabled={isSaving}
-                              >
-                                {isSaving ? (
-                                  <AILoadingSpinner size="sm" variant="cyber" />
-                                ) : (
-                                  <RiSave3Line className="w-4 h-4" />
-                                )}
-                              </NeonButton>
-                            </div>
-                          </div>
-                        </GlassCard>
-                      </div>
-                    )}
-                  </motion.div>
+                    <RiImageEditLine className="w-5 h-5 mr-2" />
+                    {isProcessing ? 'Processing...' : 'Remove Background'}
+                  </NeonButton>
                 )}
-              </AnimatePresence>
 
-              {/* Process Button */}
-              <div className="flex justify-end">
-                <NeonButton
-                  variant="primary"
-                  size="lg"
-                  disabled={!selectedImage || isProcessing}
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    const formEvent = { preventDefault: () => {} } as React.FormEvent;
-                    handleSubmit(formEvent);
-                  }}
-                >
-                  {isProcessing ? (
-                    <>
-                      <AILoadingSpinner size="sm" variant="cyber" />
-                      <span className="ml-2">Processing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RiImageEditLine className="w-5 h-5 mr-2" />
-                      Remove Background
-                    </>
-                  )}
-                </NeonButton>
+                {processedImage && (
+                  <>
+                    <NeonButton
+                      variant="primary"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = processedImage;
+                        link.download = 'removed-background.png';
+                        link.click();
+                      }}
+                    >
+                      <RiDownload2Line className="w-5 h-5 mr-2" />
+                      Download
+                    </NeonButton>
+
+                    <NeonButton
+                      onClick={handleSaveToGallery}
+                      disabled={isSaving}
+                      variant="secondary"
+                    >
+                      <RiSave3Line className="w-5 h-5 mr-2" />
+                      {isSaving ? 'Saving...' : 'Save to Gallery'}
+                    </NeonButton>
+                  </>
+                )}
               </div>
+
+              {error && (
+                <div className="text-error text-center p-4 rounded-lg bg-error/10">
+                  {error}
+                </div>
+              )}
             </form>
           </GlassCard>
         </motion.div>
