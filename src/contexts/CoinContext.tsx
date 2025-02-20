@@ -29,7 +29,8 @@ export type ToolPath =
   | 'trend-catcher'
   | 'indicator-creator'
   | 'trading-signal'
-  | 'ai-chat';
+  | 'ai-chat'
+  | 'enhance';
 
 export interface CoinPackage {
   id: string;
@@ -93,7 +94,8 @@ export const TOOL_COSTS: Record<ToolPath, number> = {
   'trend-catcher': 20,
   'indicator-creator': 15,
   'trading-signal': 18,
-  'ai-chat': 5
+  'ai-chat': 5,
+  'enhance': 10
 };
 
 export const PREMIUM_CONVERSION = {

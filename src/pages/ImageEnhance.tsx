@@ -4,15 +4,20 @@ import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { API_URL } from '../config';
 import { GlassCard } from '../components/FuturisticUI';
+import { useAuth } from '../contexts/AuthContext';
+import { useCoins } from '../contexts/CoinContext';
+import { useNavigate } from 'react-router-dom';
 
 interface EnhancementSettings {
-  denoise: number;
-  contrast: number;
-  sharpness: number;
-  brightness: number;
+  enhance_level: 'low' | 'medium' | 'high';
+  style: 'natural' | 'vibrant' | 'artistic';
+  focus: 'overall' | 'details' | 'colors';
 }
 
 const ImageEnhance: React.FC = () => {
+  const { user } = useAuth();
+  const { useCoinsForTool } = useCoins();
+  const navigate = useNavigate();
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [enhancedImage, setEnhancedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -21,11 +26,19 @@ const ImageEnhance: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const comparisonRef = useRef<HTMLDivElement>(null);
   const [settings, setSettings] = useState<EnhancementSettings>({
-    denoise: 10,
-    contrast: 3,
-    sharpness: 1,
-    brightness: 0
+    enhance_level: 'medium',
+    style: 'natural',
+    focus: 'overall'
   });
+
+  useEffect(() => {
+    // Check if user has pro access
+    if (!user?.user_metadata?.is_premium) {
+      toast.error('This is a pro feature. Please upgrade to access.');
+      navigate('/pricing');
+      return;
+    }
+  }, [user, navigate]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -58,6 +71,16 @@ const ImageEnhance: React.FC = () => {
 
   const enhanceImage = async (imageData: string) => {
     try {
+      // Check pro status and coins
+      if (!user?.user_metadata?.is_premium) {
+        const success = await useCoinsForTool('enhance');
+        if (!success) {
+          toast.error('Not enough coins! Purchase more or upgrade to pro.');
+          navigate('/pricing');
+          return;
+        }
+      }
+
       setIsProcessing(true);
       const response = await fetch(`${API_URL}/api/ai/enhance`, {
         method: 'POST',
@@ -120,7 +143,7 @@ const ImageEnhance: React.FC = () => {
     };
   }, [isDragging]);
 
-  const handleSettingChange = (setting: keyof EnhancementSettings, value: number) => {
+  const handleSettingChange = (setting: keyof EnhancementSettings, value: any) => {
     setSettings(prev => ({
       ...prev,
       [setting]: value
@@ -138,17 +161,43 @@ const ImageEnhance: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const renderSettingOptions = (setting: keyof EnhancementSettings, options: { value: string; label: string; description: string }[]) => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <label className="text-futuristic-silver font-orbitron text-sm uppercase tracking-wider">
+          {setting.replace('_', ' ')}
+        </label>
+      </div>
+      <div className="grid grid-cols-1 gap-2">
+        {options.map(option => (
+          <button
+            key={option.value}
+            onClick={() => handleSettingChange(setting, option.value)}
+            className={`p-3 rounded-lg text-left transition-all ${
+              settings[setting] === option.value
+                ? 'bg-gradient-cyber text-white'
+                : 'bg-black/20 text-futuristic-silver hover:bg-black/30'
+            }`}
+          >
+            <div className="font-medium mb-1">{option.label}</div>
+            <div className="text-xs opacity-80">{option.description}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-black/90 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="text-center relative">
           <div className="absolute inset-0 bg-gradient-cyber opacity-10"></div>
           <h1 className="text-4xl md:text-5xl font-orbitron text-holographic-teal mb-3 tracking-wider">
-            Neural Image Enhancement
+            AI Image Enhancement
           </h1>
           <div className="h-1 w-32 bg-gradient-cyber mx-auto mb-4"></div>
           <p className="text-futuristic-silver text-sm md:text-base font-inter max-w-2xl mx-auto leading-relaxed">
-            Enhance your images with AI-powered tools. Adjust noise reduction, contrast, sharpness, and brightness with precision.
+            Enhance your images using advanced AI technology. Choose from different styles and enhancement levels for optimal results.
           </p>
         </div>
 
@@ -191,35 +240,24 @@ const ImageEnhance: React.FC = () => {
               <div className="p-4 border-b border-white/5">
                 <h3 className="font-orbitron text-neon-cyan text-lg">Enhancement Controls</h3>
               </div>
-              <div className="p-6 space-y-6">
-                {Object.entries(settings).map(([key, value]) => (
-                  <div key={key} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <label className="text-futuristic-silver font-orbitron text-sm uppercase tracking-wider">
-                        {key === 'denoise' ? 'Noise Reduction' : key}
-                      </label>
-                      <span className="text-holographic-teal font-mono">{value.toFixed(1)}</span>
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-cyber opacity-10 rounded-full"></div>
-                      <input
-                        type="range"
-                        min={key === 'brightness' ? -50 : 0}
-                        max={key === 'contrast' ? 10 : key === 'sharpness' ? 3 : 20}
-                        step={key === 'sharpness' ? 0.1 : 1}
-                        value={value}
-                        onChange={(e) => handleSettingChange(key as keyof EnhancementSettings, parseFloat(e.target.value))}
-                        className="w-full appearance-none h-1 rounded-full bg-black/50 accent-holographic-teal relative z-10"
-                      />
-                    </div>
-                    <p className="text-xs text-futuristic-silver/60">
-                      {key === 'denoise' && 'Reduce image noise and graininess'}
-                      {key === 'contrast' && 'Adjust the difference between light and dark areas'}
-                      {key === 'sharpness' && 'Enhance edge definition and detail'}
-                      {key === 'brightness' && 'Control overall image luminosity'}
-                    </p>
-                  </div>
-                ))}
+              <div className="p-6 space-y-8">
+                {renderSettingOptions('enhance_level', [
+                  { value: 'low', label: 'Subtle Enhancement', description: 'Gentle improvements while preserving the original look' },
+                  { value: 'medium', label: 'Balanced Enhancement', description: 'Optimal balance between enhancement and naturalness' },
+                  { value: 'high', label: 'Maximum Enhancement', description: 'Strong improvements for dramatic results' }
+                ])}
+
+                {renderSettingOptions('style', [
+                  { value: 'natural', label: 'Natural', description: 'Maintain realistic appearance while improving quality' },
+                  { value: 'vibrant', label: 'Vibrant', description: 'Boost colors and contrast for eye-catching results' },
+                  { value: 'artistic', label: 'Artistic', description: 'Creative enhancement with dramatic lighting and mood' }
+                ])}
+
+                {renderSettingOptions('focus', [
+                  { value: 'overall', label: 'Overall Quality', description: 'Balanced enhancement across all aspects' },
+                  { value: 'details', label: 'Fine Details', description: 'Emphasis on sharpness and texture clarity' },
+                  { value: 'colors', label: 'Color Enhancement', description: 'Focus on color balance and vibrancy' }
+                ])}
                 
                 <button
                   onClick={() => originalImage && enhanceImage(originalImage)}
