@@ -7,6 +7,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { supabase } from '../lib/supabase';
 
+declare global {
+  interface Window {
+    imglyRemoveBackground: {
+      removeBackground: (file: File, options?: { progress?: (name: string, progress: number) => void }) => Promise<Blob>;
+    };
+  }
+}
+
 const BgRemove: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -81,13 +89,23 @@ const BgRemove: React.FC = () => {
     setProgress(0);
     
     try {
-      // Import rembg-web dynamically
-      const { removeBackground } = await import('@imgly/background-removal');
+      // Load the script dynamically
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@imgly/background-removal@1.5.8/dist/browser/bundle.js';
+      script.async = true;
+      
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
+
+      // Access the global removeBackground function
+      const { removeBackground } = window.imglyRemoveBackground;
 
       // Process the image
       const processedBlob = await removeBackground(selectedImage, {
-        progress: (...args: any[]) => {
-          const progressValue = args[1] as number;
+        progress: (_, progressValue) => {
           setProgress(Math.round(progressValue * 100));
         },
       });
