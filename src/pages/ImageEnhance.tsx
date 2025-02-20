@@ -38,7 +38,6 @@ const ImageEnhance: React.FC = () => {
 
     setEnhancedImage(null);
     setShowComparison(false);
-    setComparisonPosition(50);
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -82,6 +81,7 @@ const ImageEnhance: React.FC = () => {
       toast.success('Image enhanced successfully!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to enhance image');
+      setEnhancedImage(null);
     } finally {
       setIsProcessing(false);
     }
@@ -93,27 +93,30 @@ const ImageEnhance: React.FC = () => {
     }
   }, [originalImage, enhancedImage]);
 
-  const handleComparisonMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleComparisonMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!comparisonRef.current || !isDragging) return;
     
     const rect = comparisonRef.current.getBoundingClientRect();
     const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const position = ((x - rect.left) / rect.width) * 100;
     setComparisonPosition(Math.min(Math.max(position, 0), 100));
-  };
+  }, [isDragging]);
 
   useEffect(() => {
     const handleMouseUp = () => setIsDragging(false);
     const handleMouseLeave = () => setIsDragging(false);
+    const handleTouchEnd = () => setIsDragging(false);
 
     if (isDragging) {
       window.addEventListener('mouseup', handleMouseUp);
       window.addEventListener('mouseleave', handleMouseLeave);
+      window.addEventListener('touchend', handleTouchEnd);
     }
 
     return () => {
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isDragging]);
 
@@ -266,59 +269,69 @@ const ImageEnhance: React.FC = () => {
               </div>
 
               <div className="p-6 h-[calc(100%-4rem)]">
-                {originalImage ? (
-                  <div
-                    ref={comparisonRef}
-                    className="relative h-full rounded-xl overflow-hidden cursor-col-resize touch-pan-x bg-black/20"
-                    onMouseDown={() => setIsDragging(true)}
-                    onTouchStart={() => setIsDragging(true)}
-                    onMouseMove={handleComparisonMove}
-                    onTouchMove={handleComparisonMove}
-                  >
-                    {/* Base layer - Enhanced or Original */}
+                {originalImage && enhancedImage ? (
+                  showComparison ? (
+                    <div
+                      ref={comparisonRef}
+                      className="relative h-full rounded-xl overflow-hidden cursor-col-resize touch-pan-x bg-black/20"
+                      onMouseDown={() => setIsDragging(true)}
+                      onTouchStart={() => setIsDragging(true)}
+                      onMouseMove={handleComparisonMove}
+                      onTouchMove={handleComparisonMove}
+                    >
+                      <img
+                        src={enhancedImage}
+                        alt="Enhanced"
+                        className="absolute inset-0 w-full h-full object-contain"
+                      />
+                      <div
+                        className="absolute inset-y-0 left-0 overflow-hidden"
+                        style={{ width: `${comparisonPosition}%` }}
+                      >
+                        <img
+                          src={originalImage}
+                          alt="Original"
+                          className="absolute inset-0 w-[100vw] h-full object-contain"
+                          style={{ maxWidth: 'none' }}
+                        />
+                      </div>
+                      <div
+                        className="absolute inset-y-0 bg-holographic-teal/50 w-0.5 cursor-col-resize"
+                        style={{ left: `${comparisonPosition}%` }}
+                      >
+                        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-cyber p-[1px]">
+                          <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
+                            <svg className="w-4 h-4 text-holographic-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded-full">
+                          <span className="text-xs font-orbitron text-white/70">Original</span>
+                        </div>
+                        <div className="absolute top-4 right-4 bg-black/70 px-3 py-1 rounded-full">
+                          <span className="text-xs font-orbitron text-white/70">Enhanced</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative h-full rounded-xl overflow-hidden bg-black/20">
+                      <img
+                        src={enhancedImage}
+                        alt="Enhanced"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )
+                ) : originalImage ? (
+                  <div className="relative h-full rounded-xl overflow-hidden bg-black/20">
                     <img
-                      src={enhancedImage || originalImage}
-                      alt={enhancedImage ? "Enhanced" : "Original"}
-                      className="absolute inset-0 w-full h-full object-contain"
+                      src={originalImage}
+                      alt="Original"
+                      className="w-full h-full object-contain"
                     />
-                    
-                    {/* Comparison overlay */}
-                    {enhancedImage && showComparison && (
-                      <>
-                        <div
-                          className="absolute inset-y-0 left-0 overflow-hidden"
-                          style={{ width: `${comparisonPosition}%` }}
-                        >
-                          <img
-                            src={originalImage}
-                            alt="Original"
-                            className="absolute inset-0 w-full h-full object-contain"
-                          />
-                        </div>
-                        <div
-                          className="absolute inset-y-0 bg-holographic-teal/50 w-0.5 cursor-col-resize"
-                          style={{ left: `${comparisonPosition}%` }}
-                        >
-                          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-cyber p-[1px]">
-                            <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
-                              <svg className="w-4 h-4 text-holographic-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="absolute inset-0 pointer-events-none">
-                          <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded-full">
-                            <span className="text-xs font-orbitron text-white/70">Original</span>
-                          </div>
-                          <div className="absolute top-4 right-4 bg-black/70 px-3 py-1 rounded-full">
-                            <span className="text-xs font-orbitron text-white/70">Enhanced</span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Processing overlay */}
                     {isProcessing && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                         <div className="flex flex-col items-center space-y-4">
@@ -332,6 +345,18 @@ const ImageEnhance: React.FC = () => {
                           </div>
                           <p className="font-orbitron text-sm text-white">Processing Enhancement</p>
                         </div>
+                      </div>
+                    )}
+                    {!isProcessing && !enhancedImage && (
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <button
+                          onClick={() => originalImage && enhanceImage(originalImage)}
+                          className="px-6 py-3 bg-gradient-cyber hover:bg-gradient-cyber/90 text-white font-orbitron rounded-lg transition-all
+                            relative group overflow-hidden"
+                        >
+                          <span className="relative z-10">Enhance Image</span>
+                          <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                        </button>
                       </div>
                     )}
                   </div>
