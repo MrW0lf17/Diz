@@ -55,6 +55,7 @@ import NewspaperIcon from '@mui/icons-material/Newspaper';
 import PublicIcon from '@mui/icons-material/Public';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import { alpha, styled } from '@mui/material/styles';
+import { GTranslate as TranslateIcon } from '@mui/icons-material';
 
 // Register ChartJS components
 ChartJS.register(
@@ -289,6 +290,49 @@ const LoadingContent = styled(Box)({
   gap: '16px',
   color: 'white'
 });
+
+// Add this styled component with the other styled components
+const ChartContainer = styled(Box)(({ theme }) => ({
+  background: 'rgba(0, 0, 0, 0.5)',
+  borderRadius: '16px',
+  padding: theme.spacing(2),
+  [theme.breakpoints.up('sm')]: {
+    padding: theme.spacing(3),
+  },
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  height: '100%',
+  minHeight: '300px',
+  display: 'flex',
+  flexDirection: 'column',
+  '& canvas': {
+    maxHeight: '400px',
+    [theme.breakpoints.down('sm')]: {
+      maxHeight: '300px',
+    }
+  }
+}));
+
+// Add this styled component after the other styled components
+const TranslateButton = styled(Button)(({ theme }) => ({
+  position: 'fixed',
+  right: theme.spacing(2),
+  top: theme.spacing(2),
+  zIndex: 1000,
+  background: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(10px)',
+  borderRadius: '50px',
+  padding: '8px 16px',
+  color: 'white',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  '&:hover': {
+    background: 'rgba(255, 255, 255, 0.2)',
+  },
+  [theme.breakpoints.down('sm')]: {
+    top: theme.spacing(1),
+    right: theme.spacing(1),
+    padding: '6px 12px',
+  }
+}));
 
 const MarketAnalyst: React.FC = () => {
   const handleToolAction = useToolAction('market-analyst');
@@ -738,8 +782,47 @@ Format your response as a JSON object with the following structure:
     }
   };
 
+  // Add this function inside the MarketAnalyst component before the return statement
+  const initializeGoogleTranslate = () => {
+    const script = document.createElement('script');
+    script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+    document.body.appendChild(script);
+
+    window.googleTranslateElementInit = () => {
+      new window.google.translate.TranslateElement(
+        {
+          pageLanguage: 'en',
+          includedLanguages: 'ar,zh-CN,fr,de,hi,id,it,ja,ko,pt,ru,es,th,tr,vi',
+          layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false,
+        },
+        'google_translate_element'
+      );
+    };
+  };
+
+  // Add this effect hook after the other hooks in the component
+  useEffect(() => {
+    // Initialize Google Translate
+    if (!document.querySelector('script[src*="translate.google.com"]')) {
+      initializeGoogleTranslate();
+    }
+  }, []);
+
   return (
     <MainContainer>
+      <TranslateButton
+        startIcon={<TranslateIcon />}
+        onClick={() => {
+          const iframe = document.querySelector('.goog-te-menu-frame') as HTMLIFrameElement;
+          if (iframe) {
+            iframe.contentWindow?.document.querySelector('.goog-te-menu2-item div')?.click();
+          }
+        }}
+      >
+        Translate
+      </TranslateButton>
+      <div id="google_translate_element" style={{ position: 'absolute', top: '-9999px' }} />
       <ContentContainer>
         <PageTitle variant="h3" component="h1" gutterBottom>
           AI Market Analyst
@@ -956,21 +1039,35 @@ Format your response as a JSON object with the following structure:
 
             {/* Price Chart */}
             <Grid item xs={12}>
-              <Box sx={styles.chartContainer}>
+              <ChartContainer>
                 <Line 
                   options={{
                     ...chartOptions,
+                    maintainAspectRatio: false,
+                    responsive: true,
                     plugins: {
                       ...chartOptions.plugins,
                       title: {
                         display: true,
                         text: `${symbol} Price Chart (${TIME_FRAMES.find(tf => tf.value === timeFrame)?.label})`,
                         color: 'white',
+                        font: {
+                          size: window.innerWidth < 600 ? 14 : 16
+                        },
+                        padding: {
+                          top: 10,
+                          bottom: 10
+                        }
                       },
                       legend: {
                         ...chartOptions.plugins.legend,
                         labels: {
                           color: 'white',
+                          font: {
+                            size: window.innerWidth < 600 ? 12 : 14
+                          },
+                          boxWidth: window.innerWidth < 600 ? 30 : 40,
+                          padding: window.innerWidth < 600 ? 10 : 20
                         },
                       },
                     },
@@ -982,6 +1079,11 @@ Format your response as a JSON object with the following structure:
                         },
                         ticks: {
                           color: 'white',
+                          font: {
+                            size: window.innerWidth < 600 ? 10 : 12
+                          },
+                          maxRotation: 0,
+                          padding: window.innerWidth < 600 ? 5 : 8
                         },
                       },
                       x: {
@@ -990,6 +1092,11 @@ Format your response as a JSON object with the following structure:
                         },
                         ticks: {
                           color: 'white',
+                          font: {
+                            size: window.innerWidth < 600 ? 10 : 12
+                          },
+                          maxRotation: 45,
+                          padding: window.innerWidth < 600 ? 5 : 8
                         },
                       },
                     },
@@ -1000,10 +1107,13 @@ Format your response as a JSON object with the following structure:
                       ...analysisData.chartData.datasets[0],
                       borderColor: '#2196F3',
                       backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                      borderWidth: window.innerWidth < 600 ? 1.5 : 2,
+                      pointRadius: window.innerWidth < 600 ? 2 : 3,
+                      pointHoverRadius: window.innerWidth < 600 ? 4 : 6,
                     }],
                   }}
                 />
-              </Box>
+              </ChartContainer>
             </Grid>
 
             {/* Analysis Details */}
