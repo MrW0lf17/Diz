@@ -82,11 +82,11 @@ const BgRemove: React.FC = () => {
       const formData = new FormData();
       formData.append('file', selectedImage);
 
-      const response = await fetch('/api/ai/remove-background', {
+      const response = await fetch('https://bck-production-6927.up.railway.app/api/ai/remove-background', {
         method: 'POST',
         body: formData,
         headers: {
-          'Accept': 'application/json'
+          'Accept': 'application/json',
         }
       });
 
@@ -96,19 +96,13 @@ const BgRemove: React.FC = () => {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
         } catch (e) {
-          // If JSON parsing fails, try to get text
-          errorMessage = await response.text() || errorMessage;
+          errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      let data;
-      try {
-        data = await response.json();
-      } catch (e) {
-        throw new Error('Invalid response from server');
-      }
-
+      const data = await response.json();
+      
       if (!data.success) {
         throw new Error(data.error || 'Failed to process image');
       }
@@ -120,11 +114,11 @@ const BgRemove: React.FC = () => {
         setProcessedImage(data.image_data);
         toast.success('Background removed successfully!');
       } else {
-        throw new Error('No image data received from server');
+        throw new Error('No processed image received from server');
       }
     } catch (error) {
       console.error('Error processing file:', error);
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message = error instanceof Error ? error.message : 'An error occurred while processing the image';
       setError(message);
       toast.error(message);
     } finally {
