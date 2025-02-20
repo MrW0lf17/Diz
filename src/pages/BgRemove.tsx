@@ -85,7 +85,9 @@ const BgRemove: React.FC = () => {
       // Process the image
       const processedBlob = await removeBackground(selectedImage, {
         progress: (_, progressValue) => {
-          setProgress(Math.round(progressValue * 100));
+          // Ensure progress is between 0-100
+          const normalizedProgress = Math.min(100, Math.max(0, progressValue * 100));
+          setProgress(Math.round(normalizedProgress));
         },
       });
 
