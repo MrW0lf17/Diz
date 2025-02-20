@@ -369,9 +369,17 @@ declare global {
         translate: (element: HTMLElement) => void;
       };
     };
-    googleTranslateElementInit: () => void;
+    googleTranslateElementInit?: () => void;
   }
 }
+
+// Add this type for the sentiment box styles
+const sentimentBoxStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 2,
+  mb: 2
+} as const;
 
 const MarketAnalyst: React.FC = () => {
   const handleToolAction = useToolAction('market-analyst');
@@ -840,7 +848,7 @@ Format your response as a JSON object with the following structure:
       new window.google.translate.TranslateElement(
         {
           pageLanguage: 'en',
-          includedLanguages: 'ar,zh-CN,fr,de,hi,id,it,ja,ko,pt,ru,es,th,tr,vi',
+          includedLanguages: 'ar,bn,zh-CN,fa,fr,de,hi,id,it,ja,ko,ms,pa,ps,pt,ru,es,ta,te,th,tr,ur,vi',
           layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
           autoDisplay: false,
           multilanguagePage: true
@@ -1023,7 +1031,7 @@ Format your response as a JSON object with the following structure:
                   }}>
                     Market Sentiment
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 } as const}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
                     {analysisData.analysis.sentiment === 'bullish' ? (
                       <TrendingUpIcon sx={{ color: '#4caf50', fontSize: { xs: 32, sm: 40 } }} />
                     ) : analysisData.analysis.sentiment === 'bearish' ? (
@@ -1055,7 +1063,7 @@ Format your response as a JSON object with the following structure:
                         }}
                       />
                     </Box>
-                  </Box>
+                  </div>
                 </CardContent>
               </Card>
             </Grid>
