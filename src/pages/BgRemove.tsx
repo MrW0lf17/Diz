@@ -82,17 +82,33 @@ const BgRemove: React.FC = () => {
       const formData = new FormData();
       formData.append('file', selectedImage);
 
-      const response = await fetch('/api/ai/remove-background', {
+      const response = await fetch('https://bck-production-6927.up.railway.app/api/ai/remove-background', {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to remove background');
+        let errorMessage = 'Failed to remove background';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // If JSON parsing fails, try to get text
+          errorMessage = await response.text() || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Invalid response from server');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to process image');
+      }
       
       if (data.processed_url) {
         setProcessedImage(data.processed_url);
@@ -100,6 +116,8 @@ const BgRemove: React.FC = () => {
       } else if (data.image_data) {
         setProcessedImage(data.image_data);
         toast.success('Background removed successfully!');
+      } else {
+        throw new Error('No image data received from server');
       }
     } catch (error) {
       console.error('Error processing file:', error);
