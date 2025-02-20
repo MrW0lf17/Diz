@@ -1,16 +1,19 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RiUpload2Line, RiDownload2Line, RiZoomInLine, RiImageLine, RiSave3Line } from 'react-icons/ri';
+import { RiUpload2Line, RiDownload2Line, RiZoomInLine, RiImageLine, RiSave3Line, RiCoinLine } from 'react-icons/ri';
 import { toast } from 'react-hot-toast';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToolAction } from '../hooks/useToolAction';
+import { useCoins } from '../contexts/CoinContext';
+import { TOOL_COSTS } from '../config/coinConfig';
 
 const Resize: React.FC = () => {
   const handleToolAction = useToolAction('/resize');
   
   const { user } = useAuth();
+  const { balance } = useCoins();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [processedImage, setProcessedImage] = useState<string>('');
@@ -67,8 +70,24 @@ const Resize: React.FC = () => {
   const handleProcess = async () => {
     if (!selectedImage) return;
 
+    if (!user) {
+      toast.error('Please log in to use this feature');
+      return;
+    }
+
+    if (balance < TOOL_COSTS['resize']) {
+      toast.error(`Not enough coins. You need ${TOOL_COSTS['resize']} coins.`);
+      return;
+    }
+
     setIsProcessing(true);
     try {
+      // First check if user can pay
+      const canProceed = await handleToolAction();
+      if (!canProceed) {
+        throw new Error('Failed to process payment');
+      }
+
       // Create a new image element
       const img = new Image();
       img.src = previewUrl;
@@ -104,7 +123,8 @@ const Resize: React.FC = () => {
       toast.success('Image resized successfully!');
     } catch (error) {
       console.error('Error processing image:', error);
-      toast.error('Failed to process image');
+      const message = error instanceof Error ? error.message : 'Failed to process image';
+      toast.error(message);
     } finally {
       setIsProcessing(false);
     }
@@ -189,6 +209,15 @@ const Resize: React.FC = () => {
         <p className="text-lg text-futuristic-silver/80 font-inter">
           Resize your images with high-quality results
         </p>
+        <div className="flex items-center justify-center gap-4 mt-4">
+          <div className="flex items-center gap-2 text-neon-cyan">
+            <RiCoinLine className="w-5 h-5" />
+            <span className="font-orbitron">{balance} coins</span>
+          </div>
+          <div className="text-futuristic-silver/60 text-sm">
+            Cost: {TOOL_COSTS['resize']} coins per resize
+          </div>
+        </div>
       </motion.div>
 
       <div className="max-w-6xl mx-auto">
