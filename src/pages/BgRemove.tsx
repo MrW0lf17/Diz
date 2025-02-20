@@ -34,25 +34,26 @@ const BgRemove: React.FC = () => {
       
       try {
         // First check if the user has a coin balance record
-        let { data: coinData, error: coinError } = await supabase
+        const { data: coinData, error: coinError } = await supabase
           .from('user_coins')
-          .select('coins')
+          .select('*')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .limit(1)
+          .single();
 
-        if (coinError) {
+        if (coinError && coinError.code !== 'PGRST116') {
           console.error('Error fetching coins:', coinError);
           throw coinError;
         }
 
         // If no record exists, create one with default coins
-        if (!coinData) {
+        if (!coinData || coinError?.code === 'PGRST116') {
           const { data: newCoinData, error: insertError } = await supabase
             .from('user_coins')
-            .insert([
-              { user_id: user.id, coins: 0 }
+            .upsert([
+              { user_id: user.id, coins: 10 } // Give 10 free coins to new users
             ])
-            .select('coins')
+            .select()
             .single();
 
           if (insertError) {
@@ -60,13 +61,17 @@ const BgRemove: React.FC = () => {
             throw insertError;
           }
 
-          coinData = newCoinData;
+          setUserCoins(newCoinData?.coins || 10);
+          return;
         }
 
         setUserCoins(coinData?.coins || 0);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error managing user coins:', error);
-        toast.error('Failed to fetch coin balance. Please try refreshing the page.');
+        // Don't show error toast if it's just that no record exists
+        if (error.code !== 'PGRST116') {
+          toast.error('Failed to fetch coin balance. Please try refreshing the page.');
+        }
         setUserCoins(0);
       }
     };
