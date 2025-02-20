@@ -34,12 +34,17 @@ export default defineConfig({
           'animation-vendor': ['framer-motion', 'react-spring', 'lottie-react'],
           'utils-vendor': ['axios', 'date-fns', 'uuid'],
           'tensorflow': ['@tensorflow/tfjs'],
-          'ai-apis': ['@huggingface/inference']
+          'ai-apis': ['@huggingface/inference'],
+          'bg-removal': ['@imgly/background-removal']
         }
       },
       onwarn(warning, warn) {
         // Ignore eval warnings from dependencies
         if (warning.code === 'EVAL' && warning.id?.includes('three-stdlib')) {
+          return;
+        }
+        // Ignore external module warnings for @imgly/background-removal
+        if (warning.code === 'UNRESOLVED_IMPORT' && warning.source === '@imgly/background-removal') {
           return;
         }
         warn(warning);
@@ -62,7 +67,8 @@ export default defineConfig({
       '@mui/system',
       '@emotion/react',
       '@emotion/styled',
-      '@emotion/cache'
+      '@emotion/cache',
+      '@imgly/background-removal'
     ]
   },
   resolve: {
