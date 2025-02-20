@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://bck.railway.internal/api/:path*"
+      "destination": "https://bck-production-6927.up.railway.app/api/:path*"
     },
     {
       "source": "/(.*)",

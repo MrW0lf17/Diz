@@ -82,11 +82,9 @@ const BgRemove: React.FC = () => {
       const formData = new FormData();
       formData.append('file', selectedImage);
 
-      const response = await fetch('https://bck-production-6927.up.railway.app/api/ai/remove-background', {
+      const response = await fetch('/api/ai/remove-background', {
         method: 'POST',
         body: formData,
-        mode: 'cors',
-        credentials: 'include',
         headers: {
           'Accept': 'application/json'
         }
