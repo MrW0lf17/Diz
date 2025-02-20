@@ -4,6 +4,7 @@ import { RiUpload2Line, RiImageEditLine, RiDownload2Line, RiGalleryLine, RiSave3
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import { useCoins } from '../contexts/CoinContext';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { supabase } from '../lib/supabase';
 import { removeBackground } from '@imgly/background-removal';
@@ -13,6 +14,7 @@ import { TOOL_COSTS } from '../config/coinConfig';
 const BgRemove: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { balance } = useCoins();
   const handleToolAction = useToolAction('bg-remove');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -22,62 +24,6 @@ const BgRemove: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [userCoins, setUserCoins] = useState<number>(0);
-
-  useEffect(() => {
-    // Fetch user's coin balance
-    const fetchUserCoins = async () => {
-      if (!user?.id) {
-        setUserCoins(0);
-        return;
-      }
-      
-      try {
-        // First check if the user has a coin balance record
-        const { data: coinData, error: coinError } = await supabase
-          .from('user_coins')
-          .select('*')
-          .eq('user_id', user.id)
-          .limit(1)
-          .single();
-
-        if (coinError && coinError.code !== 'PGRST116') {
-          console.error('Error fetching coins:', coinError);
-          throw coinError;
-        }
-
-        // If no record exists, create one with default coins
-        if (!coinData || coinError?.code === 'PGRST116') {
-          const { data: newCoinData, error: insertError } = await supabase
-            .from('user_coins')
-            .upsert([
-              { user_id: user.id, coins: 10 } // Give 10 free coins to new users
-            ])
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error('Error creating coin record:', insertError);
-            throw insertError;
-          }
-
-          setUserCoins(newCoinData?.coins || 10);
-          return;
-        }
-
-        setUserCoins(coinData?.coins || 0);
-      } catch (error: any) {
-        console.error('Error managing user coins:', error);
-        // Don't show error toast if it's just that no record exists
-        if (error.code !== 'PGRST116') {
-          toast.error('Failed to fetch coin balance. Please try refreshing the page.');
-        }
-        setUserCoins(0);
-      }
-    };
-
-    fetchUserCoins();
-  }, [user?.id]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -141,7 +87,7 @@ const BgRemove: React.FC = () => {
       return;
     }
 
-    if (userCoins < TOOL_COSTS['bg-remove']) {
+    if (balance < TOOL_COSTS['bg-remove']) {
       toast.error(`Not enough coins. You need ${TOOL_COSTS['bg-remove']} coins.`);
       navigate('/shop');
       return;
@@ -169,8 +115,6 @@ const BgRemove: React.FC = () => {
       reader.onloadend = () => {
         setProcessedImage(reader.result as string);
         toast.success('Background removed successfully!');
-        // Update local coin balance
-        setUserCoins(prev => prev - TOOL_COSTS['bg-remove']);
       };
       reader.readAsDataURL(processedBlob);
     } catch (error) {
@@ -265,7 +209,7 @@ const BgRemove: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center gap-2">
               <div className="flex items-center gap-2 text-neon-cyan mb-2 sm:mb-0">
                 <RiCoinLine className="w-5 h-5" />
-                <span className="font-orbitron">{userCoins} coins</span>
+                <span className="font-orbitron">{balance} coins</span>
               </div>
               <NeonButton
                 variant="secondary"
@@ -375,7 +319,7 @@ const BgRemove: React.FC = () => {
                               {!user?.id && (
                                 <span className="block mt-2">Please log in to use this feature</span>
                               )}
-                              {user?.id && userCoins < TOOL_COSTS['bg-remove'] && (
+                              {user?.id && balance < TOOL_COSTS['bg-remove'] && (
                                 <span className="block mt-2">
                                   Not enough coins. You need {TOOL_COSTS['bg-remove']} coins.
                                   <br />
