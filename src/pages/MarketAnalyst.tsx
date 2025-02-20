@@ -360,11 +360,13 @@ declare global {
             includedLanguages: string;
             layout: any;
             autoDisplay: boolean;
+            multilanguagePage?: boolean;
           }, element: string): void;
           InlineLayout: {
             SIMPLE: string;
           };
         };
+        translate: (element: HTMLElement) => void;
       };
     };
     googleTranslateElementInit: () => void;
@@ -821,41 +823,72 @@ Format your response as a JSON object with the following structure:
 
   // Update the Google Translate initialization
   useEffect(() => {
+    // Remove any existing Google Translate scripts and elements
+    const existingScript = document.querySelector('script[src*="translate.google.com"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    // Create and add the new script
     const script = document.createElement('script');
     script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+    script.async = true;
     document.body.appendChild(script);
 
-    // Define the callback before loading the script
-    (window as any).googleTranslateElementInit = () => {
-      new (window as any).google.translate.TranslateElement(
+    // Define the callback
+    window.googleTranslateElementInit = () => {
+      new window.google.translate.TranslateElement(
         {
           pageLanguage: 'en',
           includedLanguages: 'ar,zh-CN,fr,de,hi,id,it,ja,ko,pt,ru,es,th,tr,vi',
-          layout: (window as any).google.translate.TranslateElement.InlineLayout.SIMPLE,
+          layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
           autoDisplay: false,
+          multilanguagePage: true
         },
         'google_translate_element'
       );
+    };
+
+    // Cleanup function
+    return () => {
+      if (existingScript) {
+        existingScript.remove();
+      }
+      const translateElement = document.getElementById('google_translate_element');
+      if (translateElement) {
+        translateElement.innerHTML = '';
+      }
+      delete window.googleTranslateElementInit;
     };
   }, []);
 
   return (
     <MainContainer>
-      <TranslateButton
-        startIcon={<TranslateIcon />}
-        onClick={() => {
-          const iframe = document.querySelector('.goog-te-menu-frame') as HTMLIFrameElement;
-          if (iframe) {
-            const element = iframe.contentWindow?.document.querySelector('.goog-te-menu2-item div');
-            if (element instanceof HTMLElement) {
-              element.click();
+      <div className="translate-container" style={{ position: 'relative' }}>
+        <TranslateButton
+          startIcon={<TranslateIcon />}
+          onClick={() => {
+            const translateElement = document.getElementById('google_translate_element');
+            if (translateElement) {
+              const translateButton = translateElement.querySelector('.goog-te-gadget-simple');
+              if (translateButton instanceof HTMLElement) {
+                translateButton.click();
+              }
             }
-          }
-        }}
-      >
-        Translate
-      </TranslateButton>
-      <div id="google_translate_element" style={{ position: 'absolute', top: '-9999px' }} />
+          }}
+        >
+          Translate
+        </TranslateButton>
+        <div 
+          id="google_translate_element" 
+          style={{ 
+            position: 'fixed',
+            top: '70px',
+            right: '20px',
+            zIndex: 1000,
+          }} 
+        />
+      </div>
       <ContentContainer>
         <PageTitle variant="h3" component="h1" gutterBottom>
           AI Market Analyst
