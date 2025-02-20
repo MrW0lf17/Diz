@@ -38,35 +38,41 @@ const BgRemove: React.FC = () => {
           return;
         }
 
+        const scriptUrl = 'https://unpkg.com/@imgly/background-removal/dist/browser/bundle.js';
+        
         // First, fetch the script to check its availability
-        const response = await fetch('https://unpkg.com/@imgly/background-removal@1.5.8/dist/umd/bundle.js');
+        const response = await fetch(scriptUrl);
         if (!response.ok) {
-          throw new Error(`Failed to fetch script: ${response.statusText}`);
+          throw new Error(`Failed to fetch script: ${response.status} ${response.statusText}`);
         }
 
         const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@imgly/background-removal@1.5.8/dist/umd/bundle.js';
+        script.src = scriptUrl;
         script.type = 'text/javascript';
         script.crossOrigin = 'anonymous';
         script.async = true;
 
         const loadPromise = new Promise((resolve, reject) => {
           script.onload = () => {
-            // Verify the script loaded correctly
-            if (window.imglyRemoveBackground) {
-              resolve(undefined);
-            } else {
-              reject(new Error('Script loaded but background removal is not available'));
-            }
+            // Add a small delay to ensure the script is fully initialized
+            setTimeout(() => {
+              if (window.imglyRemoveBackground) {
+                resolve(undefined);
+              } else {
+                reject(new Error('Script loaded but background removal is not available'));
+              }
+            }, 100);
           };
-          script.onerror = () => reject(new Error('Failed to load background removal script'));
+          script.onerror = (e) => reject(new Error(`Failed to load background removal script: ${e}`));
         });
 
         document.head.appendChild(script);
         await loadPromise;
         setIsScriptLoaded(true);
+        toast.success('Background removal tool loaded successfully');
       } catch (error) {
         console.error('Error loading script:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load background removal tool');
         toast.error('Failed to load background removal tool. Please try refreshing the page.');
       }
     };
@@ -75,10 +81,8 @@ const BgRemove: React.FC = () => {
 
     // Cleanup function
     return () => {
-      const script = document.querySelector('script[src*="background-removal"]');
-      if (script) {
-        document.head.removeChild(script);
-      }
+      const scripts = document.querySelectorAll('script[src*="background-removal"]');
+      scripts.forEach(script => script.remove());
     };
   }, []);
 
