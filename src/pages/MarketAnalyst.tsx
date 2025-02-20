@@ -54,7 +54,7 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import PublicIcon from '@mui/icons-material/Public';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
-import { alpha } from '@mui/material/styles';
+import { alpha, styled } from '@mui/material/styles';
 
 // Register ChartJS components
 ChartJS.register(
@@ -163,6 +163,15 @@ const styles = {
     minHeight: '100vh',
     color: 'white',
   },
+  containerBox: {
+    padding: {
+      xs: '16px',
+      sm: '24px',
+      md: '32px'
+    },
+    width: '100%',
+    overflow: 'hidden'
+  } as const,
   glassCard: {
     background: 'rgba(255, 255, 255, 0.1)',
     backdropFilter: 'blur(10px)',
@@ -191,6 +200,95 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.1)',
   },
 };
+
+// Add this styled component definition after the styles object
+const CoinBalanceContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: theme.spacing(4),
+  [theme.breakpoints.down('sm')]: {
+    flexDirection: 'column',
+    gap: theme.spacing(1),
+    marginBottom: theme.spacing(3),
+  },
+  [theme.breakpoints.up('sm')]: {
+    flexDirection: 'row',
+    gap: theme.spacing(2),
+  },
+}));
+
+const CoinDisplay = styled(Box)({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  color: '#2196F3'
+});
+
+const CostDisplay = styled(Typography)(({ theme }) => ({
+  color: 'rgba(255, 255, 255, 0.6)',
+  [theme.breakpoints.down('sm')]: {
+    textAlign: 'center',
+  },
+}));
+
+// Add these styled components after the existing styled components
+const MainContainer = styled(Box)({
+  background: 'linear-gradient(135deg, #1a237e 0%, #000051 100%)',
+  minHeight: '100vh',
+  color: 'white'
+});
+
+const ContentContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(4),
+  width: '100%',
+  overflow: 'hidden',
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(2)
+  },
+  [theme.breakpoints.up('md')]: {
+    padding: theme.spacing(4)
+  }
+}));
+
+const PageTitle = styled(Typography)<{ component?: React.ElementType }>(({ theme }) => ({
+  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  fontWeight: 'bold',
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '1.75rem',
+    textAlign: 'center'
+  },
+  [theme.breakpoints.up('sm')]: {
+    fontSize: '2.25rem',
+    textAlign: 'left'
+  },
+  [theme.breakpoints.up('md')]: {
+    fontSize: '3rem'
+  }
+}));
+
+// Add these styled components for the loading overlay
+const LoadingOverlay = styled(Box)({
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  background: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(10px)',
+  borderRadius: '16px',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+  padding: '24px'
+});
+
+const LoadingContent = styled(Box)({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+  color: 'white'
+});
 
 const MarketAnalyst: React.FC = () => {
   const handleToolAction = useToolAction('market-analyst');
@@ -641,44 +739,28 @@ Format your response as a JSON object with the following structure:
   };
 
   return (
-    <Box sx={styles.gradientBackground}>
-      <Box sx={{ p: 4 }}>
-        <Typography 
-          variant="h3" 
-          component="h1" 
-          gutterBottom
-          sx={styles.gradientText}
-        >
+    <MainContainer>
+      <ContentContainer>
+        <PageTitle variant="h3" component="h1" gutterBottom>
           AI Market Analyst
-        </Typography>
+        </PageTitle>
 
         {/* Add coin balance display */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          gap: 2,
-          mb: 4 
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            color: '#2196F3'
-          }}>
+        <CoinBalanceContainer>
+          <CoinDisplay>
             <RiCoinLine />
             <Typography>{balance} coins</Typography>
-          </Box>
-          <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+          </CoinDisplay>
+          <CostDisplay>
             Cost: {TOOL_COSTS['market-analyst']} coins per analysis
-          </Typography>
-        </Box>
+          </CostDisplay>
+        </CoinBalanceContainer>
 
         {/* Input Form */}
         <Paper sx={{ 
           ...styles.glassCard, 
-          p: 4, 
-          mb: 4,
+          p: { xs: 2, sm: 3, md: 4 }, 
+          mb: { xs: 3, sm: 4 },
           '& .MuiInputBase-root': {
             color: 'white',
             '& fieldset': {
@@ -704,7 +786,7 @@ Format your response as a JSON object with the following structure:
           },
         }}>
           <form onSubmit={handleAnalyze}>
-            <Grid container spacing={3} alignItems="center">
+            <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
@@ -753,7 +835,7 @@ Format your response as a JSON object with the following structure:
                   sx={{
                     background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
                     color: 'white',
-                    height: '56px',
+                    height: { xs: '48px', sm: '56px' },
                     boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
                     '&:hover': {
                       background: 'linear-gradient(45deg, #1976D2 30%, #1EA5D2 90%)',
@@ -781,26 +863,30 @@ Format your response as a JSON object with the following structure:
 
         {/* Analysis Results */}
         {analysisData && (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             {/* Market Sentiment */}
             <Grid item xs={12} md={4}>
               <Card sx={{ ...styles.glassCard, height: '100%' }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={styles.gradientText}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" gutterBottom sx={{
+                    ...styles.gradientText,
+                    fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                  }}>
                     Market Sentiment
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     {analysisData.analysis.sentiment === 'bullish' ? (
-                      <TrendingUpIcon sx={{ color: '#4caf50', fontSize: 40 }} />
+                      <TrendingUpIcon sx={{ color: '#4caf50', fontSize: { xs: 32, sm: 40 } }} />
                     ) : analysisData.analysis.sentiment === 'bearish' ? (
-                      <TrendingDownIcon sx={{ color: '#f44336', fontSize: 40 }} />
+                      <TrendingDownIcon sx={{ color: '#f44336', fontSize: { xs: 32, sm: 40 } }} />
                     ) : (
-                      <TimelineIcon sx={{ color: '#ffb74d', fontSize: 40 }} />
+                      <TimelineIcon sx={{ color: '#ffb74d', fontSize: { xs: 32, sm: 40 } }} />
                     )}
                     <Box>
                       <Typography 
                         variant="h4" 
                         sx={{
+                          fontSize: { xs: '1.5rem', sm: '2rem' },
                           color: analysisData.analysis.sentiment === 'bullish' 
                             ? '#4caf50'
                             : analysisData.analysis.sentiment === 'bearish'
@@ -828,15 +914,18 @@ Format your response as a JSON object with the following structure:
             {/* Key Metrics */}
             <Grid item xs={12} md={8}>
               <Card sx={styles.glassCard}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={styles.gradientText}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" gutterBottom sx={{
+                    ...styles.gradientText,
+                    fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                  }}>
                     Key Metrics
                   </Typography>
-                  <Grid container spacing={3}>
+                  <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
                     {Object.entries(analysisData.marketData.metrics).map(([key, value]) => (
                       <Grid item xs={6} sm={3} key={key}>
                         <Box sx={{
-                          p: 2,
+                          p: { xs: 1.5, sm: 2 },
                           borderRadius: 2,
                           background: 'rgba(255, 255, 255, 0.05)',
                           transition: 'transform 0.3s ease',
@@ -844,10 +933,17 @@ Format your response as a JSON object with the following structure:
                             transform: 'translateY(-5px)',
                           },
                         }}>
-                          <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                          <Typography variant="subtitle2" sx={{ 
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            fontSize: { xs: '0.7rem', sm: '0.875rem' }
+                          }}>
                             {key.replace(/([A-Z])/g, ' $1').trim()}
                           </Typography>
-                          <Typography variant="h6" sx={{ color: '#2196F3' }}>
+                          <Typography variant="h6" sx={{ 
+                            color: '#2196F3',
+                            fontSize: { xs: '0.9rem', sm: '1.25rem' },
+                            wordBreak: 'break-word'
+                          }}>
                             {value}
                           </Typography>
                         </Box>
@@ -1138,31 +1234,17 @@ Format your response as a JSON object with the following structure:
 
         {/* Loading indicator */}
         {loading && (
-          <Box
-            sx={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              ...styles.glassCard,
-              p: 3,
-            }}
-          >
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 2,
-              color: 'white',
-            }}>
+          <LoadingOverlay>
+            <LoadingContent>
               <CircularProgress size={30} sx={{ color: '#2196F3' }} />
               <Typography variant="h6">
                 Analyzing {symbol}...
               </Typography>
-            </Box>
-          </Box>
+            </LoadingContent>
+          </LoadingOverlay>
         )}
-      </Box>
-    </Box>
+      </ContentContainer>
+    </MainContainer>
   );
 };
 
