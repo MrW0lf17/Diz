@@ -334,6 +334,43 @@ const TranslateButton = styled(Button)(({ theme }) => ({
   }
 }));
 
+// Add this after the other styled components and before the MarketAnalyst component
+const MetricBox = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(2),
+  padding: theme.spacing(2),
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  }
+})) as typeof Box;
+
+// Add these type definitions after the imports and before the component
+declare global {
+  interface Window {
+    google: {
+      translate: {
+        TranslateElement: {
+          new (options: {
+            pageLanguage: string;
+            includedLanguages: string;
+            layout: any;
+            autoDisplay: boolean;
+          }, element: string): void;
+          InlineLayout: {
+            SIMPLE: string;
+          };
+        };
+      };
+    };
+    googleTranslateElementInit: () => void;
+  }
+}
+
 const MarketAnalyst: React.FC = () => {
   const handleToolAction = useToolAction('market-analyst');
   const { user } = useAuth();
@@ -782,31 +819,24 @@ Format your response as a JSON object with the following structure:
     }
   };
 
-  // Add this function inside the MarketAnalyst component before the return statement
-  const initializeGoogleTranslate = () => {
+  // Update the Google Translate initialization
+  useEffect(() => {
     const script = document.createElement('script');
     script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
     document.body.appendChild(script);
 
-    window.googleTranslateElementInit = () => {
-      new window.google.translate.TranslateElement(
+    // Define the callback before loading the script
+    (window as any).googleTranslateElementInit = () => {
+      new (window as any).google.translate.TranslateElement(
         {
           pageLanguage: 'en',
           includedLanguages: 'ar,zh-CN,fr,de,hi,id,it,ja,ko,pt,ru,es,th,tr,vi',
-          layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+          layout: (window as any).google.translate.TranslateElement.InlineLayout.SIMPLE,
           autoDisplay: false,
         },
         'google_translate_element'
       );
     };
-  };
-
-  // Add this effect hook after the other hooks in the component
-  useEffect(() => {
-    // Initialize Google Translate
-    if (!document.querySelector('script[src*="translate.google.com"]')) {
-      initializeGoogleTranslate();
-    }
   }, []);
 
   return (
@@ -816,7 +846,10 @@ Format your response as a JSON object with the following structure:
         onClick={() => {
           const iframe = document.querySelector('.goog-te-menu-frame') as HTMLIFrameElement;
           if (iframe) {
-            iframe.contentWindow?.document.querySelector('.goog-te-menu2-item div')?.click();
+            const element = iframe.contentWindow?.document.querySelector('.goog-te-menu2-item div');
+            if (element instanceof HTMLElement) {
+              element.click();
+            }
           }
         }}
       >
@@ -957,7 +990,7 @@ Format your response as a JSON object with the following structure:
                   }}>
                     Market Sentiment
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 } as const}>
                     {analysisData.analysis.sentiment === 'bullish' ? (
                       <TrendingUpIcon sx={{ color: '#4caf50', fontSize: { xs: 32, sm: 40 } }} />
                     ) : analysisData.analysis.sentiment === 'bearish' ? (
@@ -1007,15 +1040,7 @@ Format your response as a JSON object with the following structure:
                   <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
                     {Object.entries(analysisData.marketData.metrics).map(([key, value]) => (
                       <Grid item xs={6} sm={3} key={key}>
-                        <Box sx={{
-                          p: { xs: 1.5, sm: 2 },
-                          borderRadius: 2,
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          transition: 'transform 0.3s ease',
-                          '&:hover': {
-                            transform: 'translateY(-5px)',
-                          },
-                        }}>
+                        <MetricBox>
                           <Typography variant="subtitle2" sx={{ 
                             color: 'rgba(255, 255, 255, 0.7)',
                             fontSize: { xs: '0.7rem', sm: '0.875rem' }
@@ -1029,7 +1054,7 @@ Format your response as a JSON object with the following structure:
                           }}>
                             {value}
                           </Typography>
-                        </Box>
+                        </MetricBox>
                       </Grid>
                     ))}
                   </Grid>
