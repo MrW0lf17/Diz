@@ -87,27 +87,15 @@ const BgRemove: React.FC = () => {
         body: formData,
         headers: {
           'Accept': 'application/json',
-          'Origin': window.location.origin,
-        },
-        credentials: 'include'
+        }
       });
 
       if (!response.ok) {
-        let errorMessage = 'Failed to remove background';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (e) {
-          errorMessage = response.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to remove background');
       }
 
       const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to process image');
-      }
       
       if (data.processed_url) {
         setProcessedImage(data.processed_url);
@@ -116,11 +104,11 @@ const BgRemove: React.FC = () => {
         setProcessedImage(data.image_data);
         toast.success('Background removed successfully!');
       } else {
-        throw new Error('No processed image received from server');
+        throw new Error('No image data received from server');
       }
     } catch (error) {
       console.error('Error processing file:', error);
-      const message = error instanceof Error ? error.message : 'An error occurred while processing the image';
+      const message = error instanceof Error ? error.message : 'An error occurred';
       setError(message);
       toast.error(message);
     } finally {
