@@ -62,7 +62,7 @@ const router = createBrowserRouter([
       { path: '/ai-generator', element: <AIGenerator /> },
       { path: '/image-editor', element: <ImageEditor /> },
       { path: '/bg-remove', element: <BgRemove /> },
-      { path: '/enhance', element: <ImageEnhance /> },
+      { path: '/enhance', element: <ComingSoon /> },
       { path: '/gen-fill', element: <ComingSoon /> },
       { path: '/expand', element: <Expand /> },
       { path: '/resize', element: <Resize /> },
