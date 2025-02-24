@@ -101,20 +101,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = useCallback(async () => {
     console.log('AuthContext: Starting sign out process')
     try {
-      // Sign out from Supabase first
-      const { error } = await supabase.auth.signOut()
+      // First kill the session
+      const { error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+
+      // Then sign out from Supabase
+      const { error } = await supabase.auth.signOut({
+        scope: 'global' // This ensures all sessions are terminated
+      })
       if (error) throw error
 
-      // Then clear all state
+      // Clear all state
       setUser(null)
       setRole(null)
       setShowWelcomeModal(false)
+
+      // Clear any stored session data
+      localStorage.removeItem('supabase.auth.token')
+      sessionStorage.removeItem('supabase.auth.token')
 
       // Show success message
       toast.success('Signed out successfully')
 
       // Force a page reload to clear all state
-      window.location.href = '/'
+      window.location.replace('/')
     } catch (error) {
       console.error('Error signing out:', error)
       toast.error('Failed to sign out')

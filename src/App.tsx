@@ -50,12 +50,26 @@ import Careers from './pages/Careers';
 import Callback from './pages/Auth/Callback';
 import ImageEnhance from './pages/ImageEnhance';
 
+// Initialize Supabase session handling
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') {
+    // Clear any remaining session data
+    localStorage.removeItem('supabase.auth.token')
+    sessionStorage.removeItem('supabase.auth.token')
+    
+    // Force reload if not already on home page
+    if (window.location.pathname !== '/') {
+      window.location.replace('/')
+    }
+  }
+})
+
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route
       path="/"
       element={
-        <SessionContextProvider supabaseClient={supabase}>
+        <SessionContextProvider supabaseClient={supabase} initialSession={null}>
           <AuthProvider>
             <CoinProvider>
               <Layout />
