@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { supabase } from './lib/supabase';
 import { AuthProvider } from './contexts/AuthContext';
 import { CoinProvider } from './contexts/CoinContext';
+import { initializeCleanupJob } from './lib/cleanupUtils';
 import Layout from './components/Layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
@@ -105,6 +106,12 @@ const router = createBrowserRouter([
 ]);
 
 const App: React.FC = () => {
+  useEffect(() => {
+    // Initialize cleanup job
+    const cleanup = initializeCleanupJob();
+    return () => cleanup();
+  }, []);
+
   return (
     <React.StrictMode>
       <SessionContextProvider supabaseClient={supabase}>

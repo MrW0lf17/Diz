@@ -7,6 +7,7 @@ import { API_URL, AUTH_TOKEN_KEY } from '../config';
 import { v4 as uuid } from 'uuid';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { useToolAction } from '../hooks/useToolAction';
+import { useNavigate } from 'react-router-dom';
 
 interface GeneratedImage {
   url: string;
@@ -105,6 +106,7 @@ const STYLE_PRESETS: StylePreset[] = [
 
 const AIImageGeneration: React.FC = () => {
   const handleToolAction = useToolAction('/ai-image-generation');
+  const navigate = useNavigate();
 
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -386,8 +388,28 @@ const AIImageGeneration: React.FC = () => {
       }
     } catch (error) {
       console.error('Error generating image:', error);
-      setError('Failed to generate image. Please try again.');
-      toast.error('Failed to generate image');
+      let errorMessage = 'Failed to generate image. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Rate limit exceeded')) {
+          errorMessage = 'Too many requests. Please wait a minute and try again.';
+        } else if (error.message.includes('No authenticated user')) {
+          errorMessage = 'Please log in to generate images.';
+          // Redirect to login page
+          navigate('/login');
+        } else if (error.message.includes('Token')) {
+          errorMessage = 'Your session has expired. Please log in again.';
+          // Clear invalid token
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          // Redirect to login page
+          navigate('/login');
+        } else if (error.message.includes('Failed to generate')) {
+          errorMessage = 'Image generation failed. Please try a different prompt or try again later.';
+        }
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }

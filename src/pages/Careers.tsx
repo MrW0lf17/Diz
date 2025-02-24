@@ -103,226 +103,222 @@ const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     e.preventDefault();
     
     try {
-      const formDataToSend = new FormData();
-      
-      // Add all form fields to FormData
-      formDataToSend.append('position_title', position.title);
-      formDataToSend.append('department', position.department);
-      formDataToSend.append('full_name', formData.fullName);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('phone', formData.phone);
-      formDataToSend.append('linkedin_url', formData.linkedIn);
-      formDataToSend.append('portfolio_url', formData.portfolio);
-      formDataToSend.append('years_experience', formData.experience);
-      formDataToSend.append('cover_letter', formData.coverLetter);
-      formDataToSend.append('resume', formData.resumeFile as File);
+      // Upload resume file to storage
+      let resumeUrl = '';
+      if (formData.resumeFile) {
+        const fileExt = formData.resumeFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `resumes/${fileName}`;
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Please sign in to submit your application');
+        const { error: uploadError } = await supabase.storage
+          .from('job_applications')
+          .upload(filePath, formData.resumeFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('job_applications')
+          .getPublicUrl(filePath);
+
+        resumeUrl = publicUrl;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-job-application`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: formDataToSend,
-        }
-      );
+      // Create application record
+      const { error: insertError } = await supabase
+        .from('job_applications')
+        .insert([{
+          position_title: position.title,
+          department: position.department,
+          location: position.location,
+          employment_type: position.type,
+          applicant_name: formData.fullName,
+          applicant_email: formData.email,
+          phone_number: formData.phone,
+          linkedin_url: formData.linkedIn,
+          portfolio_url: formData.portfolio,
+          years_of_experience: parseInt(formData.experience) || 0,
+          cover_letter: formData.coverLetter,
+          resume_url: resumeUrl,
+          status: 'pending',
+          applied_at: new Date().toISOString()
+        }]);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit application');
-      }
+      if (insertError) throw insertError;
 
       toast.success('Application submitted successfully!');
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error submitting application:', error);
-      toast.error(error.message || 'Failed to submit application');
+      toast.error('Failed to submit application. Please try again.');
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-      >
-        <GlassCard variant="cyber" className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-orbitron text-futuristic-silver">
-                Apply for {position.title}
-              </h2>
-              <p className="text-sm text-futuristic-silver/60 font-inter mt-1">
-                {position.department} · {position.location} · {position.type}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-futuristic-silver/60 hover:text-white transition-colors rounded-full hover:bg-white/5"
-            >
-              <RiCloseLine className="w-6 h-6" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-orbitron text-futuristic-silver mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  required
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg bg-base-dark/40 border border-neon-cyan/20 text-futuristic-silver focus:border-neon-cyan outline-none transition-colors"
-                />
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="w-full max-w-2xl"
+          >
+            <GlassCard variant="cyber" className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-orbitron text-futuristic-silver">
+                  Apply for {position.title}
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="text-futuristic-silver/60 hover:text-futuristic-silver transition-colors"
+                >
+                  <RiCloseLine size={24} />
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-orbitron text-futuristic-silver mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg bg-base-dark/40 border border-neon-cyan/20 text-futuristic-silver focus:border-neon-cyan outline-none transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-orbitron text-futuristic-silver mb-2">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg bg-base-dark/40 border border-neon-cyan/20 text-futuristic-silver focus:border-neon-cyan outline-none transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-orbitron text-futuristic-silver mb-2">
-                  LinkedIn Profile
-                </label>
-                <input
-                  type="url"
-                  name="linkedIn"
-                  value={formData.linkedIn}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg bg-base-dark/40 border border-neon-cyan/20 text-futuristic-silver focus:border-neon-cyan outline-none transition-colors"
-                />
-              </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-orbitron text-futuristic-silver mb-2">
-                Portfolio/Website
-              </label>
-              <input
-                type="url"
-                name="portfolio"
-                value={formData.portfolio}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg bg-base-dark/40 border border-neon-cyan/20 text-futuristic-silver focus:border-neon-cyan outline-none transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-orbitron text-futuristic-silver mb-2">
-                Years of Experience *
-              </label>
-              <input
-                type="number"
-                name="experience"
-                required
-                min="0"
-                max="50"
-                value={formData.experience}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg bg-base-dark/40 border border-neon-cyan/20 text-futuristic-silver focus:border-neon-cyan outline-none transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-orbitron text-futuristic-silver mb-2">
-                Cover Letter *
-              </label>
-              <textarea
-                name="coverLetter"
-                required
-                rows={4}
-                value={formData.coverLetter}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg bg-base-dark/40 border border-neon-cyan/20 text-futuristic-silver focus:border-neon-cyan outline-none transition-colors resize-none"
-                placeholder="Tell us why you're interested in this position and what makes you a great fit..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-orbitron text-futuristic-silver mb-2">
-                Resume/CV *
-              </label>
-              <div className="flex items-center space-x-4">
-                <label className="flex-1">
-                  <div className="px-4 py-2 rounded-lg bg-base-dark/40 border border-neon-cyan/20 text-futuristic-silver hover:border-neon-cyan cursor-pointer transition-colors">
-                    {formData.resumeFile ? formData.resumeFile.name : 'Choose file...'}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-futuristic-silver mb-2">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      required
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/20 border border-neon-cyan/20 rounded-lg px-4 py-2 text-futuristic-silver focus:outline-none focus:border-neon-cyan"
+                    />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-futuristic-silver mb-2">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/20 border border-neon-cyan/20 rounded-lg px-4 py-2 text-futuristic-silver focus:outline-none focus:border-neon-cyan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-futuristic-silver mb-2">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/20 border border-neon-cyan/20 rounded-lg px-4 py-2 text-futuristic-silver focus:outline-none focus:border-neon-cyan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-futuristic-silver mb-2">
+                      Years of Experience
+                    </label>
+                    <input
+                      type="number"
+                      name="experience"
+                      min="0"
+                      value={formData.experience}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/20 border border-neon-cyan/20 rounded-lg px-4 py-2 text-futuristic-silver focus:outline-none focus:border-neon-cyan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-futuristic-silver mb-2">
+                      LinkedIn Profile
+                    </label>
+                    <input
+                      type="url"
+                      name="linkedIn"
+                      value={formData.linkedIn}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/20 border border-neon-cyan/20 rounded-lg px-4 py-2 text-futuristic-silver focus:outline-none focus:border-neon-cyan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-futuristic-silver mb-2">
+                      Portfolio URL
+                    </label>
+                    <input
+                      type="url"
+                      name="portfolio"
+                      value={formData.portfolio}
+                      onChange={handleInputChange}
+                      className="w-full bg-black/20 border border-neon-cyan/20 rounded-lg px-4 py-2 text-futuristic-silver focus:outline-none focus:border-neon-cyan"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-futuristic-silver mb-2">
+                    Cover Letter *
+                  </label>
+                  <textarea
+                    name="coverLetter"
+                    required
+                    value={formData.coverLetter}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full bg-black/20 border border-neon-cyan/20 rounded-lg px-4 py-2 text-futuristic-silver focus:outline-none focus:border-neon-cyan resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-futuristic-silver mb-2">
+                    Resume *
+                  </label>
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx"
+                    name="resumeFile"
                     required
+                    accept=".pdf,.doc,.docx"
                     onChange={handleFileChange}
-                    className="hidden"
+                    className="w-full bg-black/20 border border-neon-cyan/20 rounded-lg px-4 py-2 text-futuristic-silver focus:outline-none focus:border-neon-cyan"
                   />
-                </label>
-                {formData.resumeFile && (
+                  <p className="mt-1 text-xs text-futuristic-silver/60">
+                    Max file size: 5MB. Accepted formats: PDF, DOC, DOCX
+                  </p>
+                </div>
+
+                <div className="flex justify-end space-x-4">
                   <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, resumeFile: null }))}
-                    className="text-futuristic-silver/60 hover:text-white transition-colors"
+                    onClick={onClose}
+                    className="px-6 py-2 rounded-lg font-orbitron text-futuristic-silver/60 hover:text-futuristic-silver transition-colors"
                   >
-                    <RiCloseLine className="w-6 h-6" />
+                    Cancel
                   </button>
-                )}
-              </div>
-              <p className="text-xs text-futuristic-silver/40 mt-1">
-                Accepted formats: PDF, DOC, DOCX (max 5MB)
-              </p>
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2 rounded-lg font-orbitron text-futuristic-silver/60 hover:text-futuristic-silver transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 rounded-lg font-orbitron bg-gradient-cyber text-white transition-opacity hover:opacity-90"
-              >
-                Submit Application
-              </button>
-            </div>
-          </form>
-        </GlassCard>
-      </motion.div>
-    </div>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-lg font-orbitron bg-gradient-cyber text-white transition-opacity hover:opacity-90"
+                  >
+                    Submit Application
+                  </button>
+                </div>
+              </form>
+            </GlassCard>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
