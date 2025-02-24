@@ -136,6 +136,12 @@ const BgRemove: React.FC = () => {
     
     setIsSaving(true);
     try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        throw new Error('No authenticated user found');
+      }
+
       // Convert base64/data URL to blob
       const response = await fetch(processedImage);
       const blob = await response.blob();
@@ -167,7 +173,9 @@ const BgRemove: React.FC = () => {
             prompt: 'Background removed image',
             image_url: publicUrl,
             type: 'bg-remove',
-            settings: { original: previewImage }
+            settings: { original: previewImage },
+            user_id: session.user.id,
+            created_at: new Date().toISOString()
           }
         ]);
 

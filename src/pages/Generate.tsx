@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { NeonButton, GlassCard, AILoadingSpinner } from '../components/FuturisticUI';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
+import { supabase } from '../lib/supabase';
 
 interface GeneratedImage {
   url: string;
@@ -95,15 +96,23 @@ const Generate: React.FC = () => {
     
     setIsSaving(true);
     try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        throw new Error('No authenticated user found');
+      }
+
       const response = await fetch(`${API_URL}/api/gallery/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           imageUrl: image.url,
           prompt: image.prompt,
           settings: image.settings,
+          userId: session.user.id
         }),
       });
 

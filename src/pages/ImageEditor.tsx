@@ -134,6 +134,12 @@ const ImageEditor: React.FC = () => {
     
     setIsSaving(true);
     try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        throw new Error('No authenticated user found');
+      }
+
       // Convert base64/data URL to blob
       const response = await fetch(editedImage.url);
       const blob = await response.blob();
@@ -165,7 +171,9 @@ const ImageEditor: React.FC = () => {
             prompt: `Image edited with ${editedImage.type.replace('-', ' ')}`,
             image_url: publicUrl,
             type: editedImage.type,
-            settings: { original: editedImage.originalImage }
+            settings: { original: editedImage.originalImage },
+            user_id: session.user.id,
+            created_at: new Date().toISOString()
           }
         ]);
 

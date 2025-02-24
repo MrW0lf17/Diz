@@ -45,9 +45,19 @@ const Gallery: React.FC = () => {
   const loadImages = async () => {
     try {
       console.log('Loading images from Supabase...', new Date().toISOString());
+      
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        console.log('No authenticated user found');
+        setImages([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('generated_images')
         .select('*')
+        .eq('user_id', session.user.id)  // Only fetch images for current user
         .order('created_at', { ascending: false });
 
       if (error) {
