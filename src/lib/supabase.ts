@@ -22,10 +22,30 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
-    storage: window.localStorage, // Explicitly set storage
-    storageKey: 'supabase.auth.token', // Consistent key for storage
-    debug: import.meta.env.DEV // Enable debug logs in development
+    storage: window.localStorage,
+    storageKey: 'supabase.auth.token',
+    debug: import.meta.env.DEV
   },
+});
+
+// Initialize auth state change listener
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
+  
+  if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+    // Clear all auth data
+    window.localStorage.removeItem('supabase.auth.token');
+    window.sessionStorage.removeItem('supabase.auth.token');
+    
+    // Clear any other app-specific data
+    window.localStorage.removeItem('user');
+    window.localStorage.removeItem('role');
+    
+    // Force reload to clear all state if not already on home page
+    if (window.location.pathname !== '/') {
+      window.location.replace('/');
+    }
+  }
 });
 
 // Test the connection and auth setup
@@ -127,23 +147,20 @@ export const signIn = async (email: string, password: string) => {
 };
 
 export const signOut = async () => {
-  console.log('Attempting sign out');
+  console.log('Supabase: Starting sign out process');
   try {
-    // First kill any active session
-    const { error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) throw sessionError;
-
-    // Then sign out globally
+    // Sign out from Supabase with global scope
     const { error } = await supabase.auth.signOut({
       scope: 'global'
     });
     if (error) throw error;
 
-    // Clear any stored tokens
+    // Clear any stored tokens immediately
     window.localStorage.removeItem('supabase.auth.token');
     window.sessionStorage.removeItem('supabase.auth.token');
-
+    
     console.log('Sign out successful');
+    return true;
   } catch (error) {
     console.error('Sign out error:', error);
     throw error;
