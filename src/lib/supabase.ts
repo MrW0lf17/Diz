@@ -30,9 +30,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Initialize auth state change listener
 supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
+  console.log('Auth state changed:', { event, hasSession: !!session });
   
-  if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+  if (event === 'SIGNED_OUT') {
+    console.log('Handling sign out cleanup...');
+    
     // Clear all auth data
     window.localStorage.removeItem('supabase.auth.token');
     window.sessionStorage.removeItem('supabase.auth.token');
@@ -40,10 +42,15 @@ supabase.auth.onAuthStateChange((event, session) => {
     // Clear any other app-specific data
     window.localStorage.removeItem('user');
     window.localStorage.removeItem('role');
+    window.localStorage.removeItem('sb-' + supabaseUrl + '-auth-token');
     
-    // Force reload to clear all state if not already on home page
-    if (window.location.pathname !== '/') {
-      window.location.replace('/');
+    // Force reload to clear all state
+    window.location.href = '/';
+  } else if (event === 'SIGNED_IN') {
+    console.log('Sign in completed, redirecting...');
+    // If we're on the callback page, redirect to dashboard
+    if (window.location.pathname === '/auth/callback') {
+      window.location.replace('/dashboard');
     }
   }
 });
