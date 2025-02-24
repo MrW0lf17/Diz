@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { toast } from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WelcomeModal from '../components/WelcomeModal'
 import MobileWelcomeModal from '../components/MobileWelcomeModal'
@@ -32,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isTestLoginLoading, setIsTestLoginLoading] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
+  const navigate = useNavigate()
 
   const fetchUserRole = async (userId: string) => {
     try {
@@ -101,14 +103,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = useCallback(async () => {
     console.log('AuthContext: Starting sign out process')
     try {
+      // First clear all state
+      setUser(null)
+      setRole(null)
+      setShowWelcomeModal(false)
+
+      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut()
       if (error) throw error
-      setUser(null)
+
+      // Show success message
       toast.success('Signed out successfully')
-      window.location.href = '/'
+
+      // Use a small delay to ensure state is cleared before navigation
+      setTimeout(() => {
+        window.location.replace('/')
+      }, 100)
     } catch (error) {
       console.error('Error signing out:', error)
       toast.error('Failed to sign out')
+      // Reset state on error
+      setUser(null)
+      setRole(null)
     }
   }, [])
 
