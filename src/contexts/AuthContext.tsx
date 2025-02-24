@@ -7,7 +7,6 @@ import MobileWelcomeModal from '../components/MobileWelcomeModal'
 
 interface AuthContextType {
   user: User | null
-  role: string | null
   loading: boolean
   signOut: () => Promise<void>
   signInWithGoogle: () => Promise<void>
@@ -27,50 +26,21 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [role, setRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [isTestLoginLoading, setIsTestLoginLoading] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
 
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-
-      if (error) throw error;
-      return data?.role || 'user';
-    } catch (error) {
-      console.error('Error fetching user role:', error);
-      return 'user';
-    }
-  };
-
   useEffect(() => {
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) {
-        const userRole = await fetchUserRole(session.user.id);
-        setRole(userRole);
-      } else {
-        setRole(null);
-      }
       setLoading(false)
     })
 
     // Listen for changes on auth state (sign in, sign out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) {
-        const userRole = await fetchUserRole(session.user.id);
-        setRole(userRole);
-      } else {
-        setRole(null);
-      }
       setLoading(false)
 
       // Show welcome modal for new sign-ups
@@ -101,24 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = useCallback(async () => {
     console.log('AuthContext: Starting sign out process')
     try {
-      // Clear all state first to prevent any state-dependent code from running
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
       setUser(null)
-      setRole(null)
-      setShowWelcomeModal(false)
-
-      // Then sign out from Supabase
-      await supabase.auth.signOut()
-
-      // Show success message
       toast.success('Signed out successfully')
-
-      // The auth state change listener in supabase.ts will handle the redirect
+      window.location.href = '/'
     } catch (error) {
       console.error('Error signing out:', error)
       toast.error('Failed to sign out')
-      
-      // Force a reload as a last resort
-      window.location.reload()
     }
   }, [])
 
@@ -207,7 +167,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider value={{
       user,
-      role,
       loading,
       signOut,
       signInWithGoogle,

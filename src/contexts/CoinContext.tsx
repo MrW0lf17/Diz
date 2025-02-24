@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './AuthContext';
 import { GlassCard } from '../components/FuturisticUI';
 import toast from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
 
 interface CoinContextType {
   balance: number;
@@ -171,45 +170,6 @@ const PremiumWarningModal: React.FC<PremiumWarningModalProps> = ({
   );
 };
 
-interface CoinTransaction {
-  amount: number;
-  balance_after: number;
-  transaction_type: 'earn' | 'spend' | 'purchase';
-  tool_used?: string;
-  metadata?: Record<string, any>;
-}
-
-const recordTransaction = async (
-  userId: string,
-  transaction: Omit<CoinTransaction, 'balance_after'>
-) => {
-  try {
-    const { data: userData } = await supabase
-      .from('users')
-      .select('coin_balance')
-      .eq('id', userId)
-      .single();
-
-    if (!userData) throw new Error('User not found');
-
-    const balanceAfter = userData.coin_balance + transaction.amount;
-
-    const { error } = await supabase
-      .from('coin_transactions')
-      .insert([{
-        user_id: userId,
-        ...transaction,
-        balance_after: balanceAfter,
-        created_at: new Date().toISOString()
-      }]);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error('Error recording transaction:', error);
-    throw error;
-  }
-};
-
 export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [balance, setBalance] = useState(0);
   const [lifetimeEarned, setLifetimeEarned] = useState(0);
@@ -279,37 +239,36 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // For now, we'll just simulate it
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    const coinsEarned = 5;
-    const newBalance = balance + coinsEarned;
-    const newLifetimeEarned = lifetimeEarned + coinsEarned;
+    const newBalance = balance + 5;
+    const newLifetimeEarned = lifetimeEarned + 5;
 
-    try {
-      await recordTransaction(user.id, {
-        amount: coinsEarned,
-        transaction_type: 'earn',
-        metadata: { source: 'ad_watch' }
-      });
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        coin_balance: newBalance,
+        lifetime_earned: newLifetimeEarned,
+        last_ad_watch: now.toISOString()
+      })
+      .eq('id', user.id);
 
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          coin_balance: newBalance,
-          lifetime_earned: newLifetimeEarned,
-          last_ad_watch: now.toISOString()
-        })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      setBalance(newBalance);
-      setLifetimeEarned(newLifetimeEarned);
-      toast.success(`Earned ${coinsEarned} coins!`);
-      return true;
-    } catch (error) {
-      console.error('Error earning coins:', error);
-      toast.error('Failed to earn coins');
+    if (updateError) {
+      toast.error('Failed to award coins');
       return false;
     }
+
+    await supabase
+      .from('coin_transactions')
+      .insert([{
+        user_id: user.id,
+        amount: 5,
+        balance_after: newBalance,
+        transaction_type: 'ad_reward',
+        ip_address: window.location.hostname
+      }]);
+
+    await refreshBalance();
+    toast.success('Earned 5 coins!');
+    return true;
   };
 
   const purchaseCoins = async (packageId: string) => {
@@ -318,47 +277,44 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    const coinPackage = COIN_PACKAGES.find(p => p.id === packageId);
+    const coinPackage = COIN_PACKAGES.find(pkg => pkg.id === packageId);
     if (!coinPackage) {
       toast.error('Invalid coin package');
       return false;
     }
 
-    try {
-      // ... existing Stripe payment code ...
+    // TODO: Implement actual payment processing here
+    // For now, we'll just simulate it
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-      await recordTransaction(user.id, {
-        amount: coinPackage.coins + coinPackage.bonus,
-        transaction_type: 'purchase',
-        metadata: {
-          package_id: packageId,
-          package_name: coinPackage.name,
-          price: coinPackage.price
-        }
-      });
+    const totalCoins = coinPackage.coins + coinPackage.bonus;
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        coin_balance: balance + totalCoins,
+        lifetime_earned: lifetimeEarned + totalCoins
+      })
+      .eq('id', user.id);
 
-      const newBalance = balance + coinPackage.coins + coinPackage.bonus;
-      const newLifetimeEarned = lifetimeEarned + coinPackage.coins + coinPackage.bonus;
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          coin_balance: newBalance,
-          lifetime_earned: newLifetimeEarned
-        })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      setBalance(newBalance);
-      setLifetimeEarned(newLifetimeEarned);
-      toast.success(`Successfully purchased ${coinPackage.coins + coinPackage.bonus} coins!`);
-      return true;
-    } catch (error) {
-      console.error('Error purchasing coins:', error);
-      toast.error('Failed to purchase coins');
+    if (updateError) {
+      toast.error('Failed to add coins');
       return false;
     }
+
+    await supabase
+      .from('coin_transactions')
+      .insert([{
+        user_id: user.id,
+        amount: totalCoins,
+        transaction_type: 'purchase',
+        metadata: { package_id: packageId, price: coinPackage.price },
+        balance_after: balance + totalCoins,
+        ip_address: window.location.hostname
+      }]);
+
+    await refreshBalance();
+    toast.success(`Added ${totalCoins} coins to your balance!`);
+    return true;
   };
 
   const useCoinsForTool = async (toolPath: ToolPath) => {
@@ -368,34 +324,46 @@ export const CoinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const cost = TOOL_COSTS[toolPath];
+    if (!cost) {
+      console.error('No cost defined for tool:', toolPath);
+      toast.error('Tool configuration error');
+      return false;
+    }
+
     if (balance < cost) {
-      toast.error(`Not enough coins. You need ${cost} coins to use this tool.`);
+      toast.error(`Not enough coins! This tool requires ${cost} coins`);
       return false;
     }
 
-    try {
-      await recordTransaction(user.id, {
+    const newBalance = balance - cost;
+
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        coin_balance: newBalance
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Failed to update balance:', updateError);
+      toast.error('Failed to process coin payment');
+      return false;
+    }
+
+    await supabase
+      .from('coin_transactions')
+      .insert([{
+        user_id: user.id,
         amount: -cost,
-        transaction_type: 'spend',
-        tool_used: toolPath
-      });
+        balance_after: newBalance,
+        transaction_type: 'tool_usage',
+        tool_used: toolPath,
+        ip_address: window.location.hostname
+      }]);
 
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          coin_balance: balance - cost
-        })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      setBalance(balance - cost);
-      return true;
-    } catch (error) {
-      console.error('Error using coins:', error);
-      toast.error('Failed to use coins for tool');
-      return false;
-    }
+    await refreshBalance();
+    toast.success(`Used ${cost} coins`);
+    return true;
   };
 
   const convertToPremium = async (days: number) => {
