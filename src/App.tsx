@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { supabase } from './lib/supabase';
@@ -50,60 +50,65 @@ import Careers from './pages/Careers';
 import Callback from './pages/Auth/Callback';
 import ImageEnhance from './pages/ImageEnhance';
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Layout />,
-    errorElement: <ErrorBoundary />,
-    children: [
-      { path: '/', element: <Home /> },
-      { path: '/auth', element: <Auth /> },
-      { path: '/dashboard', element: <Dashboard /> },
-      { path: '/generate', element: <Generate /> },
-      { path: '/ai-generator', element: <AIGenerator /> },
-      { path: '/image-editor', element: <ImageEditor /> },
-      { path: '/bg-remove', element: <BgRemove /> },
-      { path: '/enhance', element: <ComingSoon /> },
-      { path: '/gen-fill', element: <ComingSoon /> },
-      { path: '/expand', element: <Expand /> },
-      { path: '/resize', element: <Resize /> },
-      { path: '/pricing', element: <Pricing /> },
-      { path: '/contact', element: <Contact /> },
-      { path: '/subscribe/:tierId', element: <Subscribe /> },
-      { path: '/subscribe/success', element: <SubscribeSuccess /> },
-      { path: '/features', element: <Features /> },
-      {
-        path: '/docs',
-        element: <Documentation />,
-        children: [
-          { path: 'getting-started', element: <GettingStarted /> },
-          { path: 'tutorials', element: <Tutorials /> },
-          { path: 'best-practices', element: <BestPractices /> },
-          { path: 'faqs', element: <FAQs /> },
-          { path: 'troubleshooting', element: <Troubleshooting /> }
-        ]
-      },
-      { path: '/about', element: <About /> },
-      { path: '/blog', element: <Blog /> },
-      { path: '/blog/:postId', element: <BlogPost /> },
-      { path: '/privacy', element: <Privacy /> },
-      { path: '/terms', element: <Terms /> },
-      { path: '/ai-image-generation', element: <AIImageGeneration /> },
-      { path: '/gallery', element: <Gallery /> },
-      { path: '/market-analyst', element: <MarketAnalyst /> },
-      { path: '/trend-catcher', element: <TrendCatcher /> },
-      { path: '/indicator-creator', element: <IndicatorCreator /> },
-      { path: '/trading-signal', element: <TradingSignal /> },
-      { path: '/text-to-video', element: <TextToVideo /> },
-      { path: '/image-to-video', element: <ImageToVideo /> },
-      { path: '/lipsync', element: <Lipsync /> },
-      { path: '/motion-brush', element: <MotionBrush /> },
-      { path: '/ai-chat', element: <AIChat /> },
-      { path: '/careers', element: <Careers /> },
-      { path: '/auth/callback', element: <Callback /> }
-    ]
-  }
-]);
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route
+      path="/"
+      element={
+        <SessionContextProvider supabaseClient={supabase}>
+          <AuthProvider>
+            <CoinProvider>
+              <Layout />
+            </CoinProvider>
+          </AuthProvider>
+        </SessionContextProvider>
+      }
+      errorElement={<ErrorBoundary />}
+    >
+      <Route index element={<Home />} />
+      <Route path="auth" element={<Auth />} />
+      <Route path="dashboard" element={<Dashboard />} />
+      <Route path="generate" element={<Generate />} />
+      <Route path="ai-generator" element={<AIGenerator />} />
+      <Route path="image-editor" element={<ImageEditor />} />
+      <Route path="bg-remove" element={<BgRemove />} />
+      <Route path="enhance" element={<ComingSoon />} />
+      <Route path="gen-fill" element={<ComingSoon />} />
+      <Route path="expand" element={<Expand />} />
+      <Route path="resize" element={<Resize />} />
+      <Route path="pricing" element={<Pricing />} />
+      <Route path="contact" element={<Contact />} />
+      <Route path="subscribe/:tierId" element={<Subscribe />} />
+      <Route path="subscribe/success" element={<SubscribeSuccess />} />
+      <Route path="features" element={<Features />} />
+      <Route path="docs" element={<Documentation />}>
+        <Route path="getting-started" element={<GettingStarted />} />
+        <Route path="tutorials" element={<Tutorials />} />
+        <Route path="best-practices" element={<BestPractices />} />
+        <Route path="faqs" element={<FAQs />} />
+        <Route path="troubleshooting" element={<Troubleshooting />} />
+      </Route>
+      <Route path="about" element={<About />} />
+      <Route path="blog" element={<Blog />} />
+      <Route path="blog/:postId" element={<BlogPost />} />
+      <Route path="privacy" element={<Privacy />} />
+      <Route path="terms" element={<Terms />} />
+      <Route path="ai-image-generation" element={<AIImageGeneration />} />
+      <Route path="gallery" element={<Gallery />} />
+      <Route path="market-analyst" element={<MarketAnalyst />} />
+      <Route path="trend-catcher" element={<TrendCatcher />} />
+      <Route path="indicator-creator" element={<IndicatorCreator />} />
+      <Route path="trading-signal" element={<TradingSignal />} />
+      <Route path="text-to-video" element={<TextToVideo />} />
+      <Route path="image-to-video" element={<ImageToVideo />} />
+      <Route path="lipsync" element={<Lipsync />} />
+      <Route path="motion-brush" element={<MotionBrush />} />
+      <Route path="ai-chat" element={<AIChat />} />
+      <Route path="careers" element={<Careers />} />
+      <Route path="auth/callback" element={<Callback />} />
+    </Route>
+  )
+);
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -114,14 +119,8 @@ const App: React.FC = () => {
 
   return (
     <React.StrictMode>
-      <SessionContextProvider supabaseClient={supabase}>
-        <AuthProvider>
-          <CoinProvider>
-            <RouterProvider router={router} />
-            <Toaster position="top-center" />
-          </CoinProvider>
-        </AuthProvider>
-      </SessionContextProvider>
+      <RouterProvider router={router} />
+      <Toaster position="top-center" />
     </React.StrictMode>
   );
 };
