@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { toast } from 'react-hot-toast'
 
 // Get environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -20,7 +21,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    storage: window.localStorage, // Explicitly set storage
+    storageKey: 'supabase.auth.token', // Consistent key for storage
+    debug: import.meta.env.DEV // Enable debug logs in development
   },
 });
 
@@ -35,6 +39,9 @@ const testConnection = async () => {
     
     if (dbError) {
       console.error('Database connection test failed:', dbError);
+      if (import.meta.env.DEV) {
+        toast.error('Database connection failed. Check console for details.');
+      }
     } else {
       console.log('Database connection test successful:', dbTest);
     }
@@ -43,92 +50,153 @@ const testConnection = async () => {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) {
       console.error('Session test failed:', sessionError);
+      if (import.meta.env.DEV) {
+        toast.error('Session test failed. Check console for details.');
+      }
     } else {
       console.log('Session test:', session ? 'Active session found' : 'No active session');
     }
   } catch (error) {
     console.error('Connection test failed:', error);
+    if (import.meta.env.DEV) {
+      toast.error('Connection test failed. Check console for details.');
+    }
   }
 };
 
-// Run connection test
-testConnection();
+// Run connection test in development only
+if (import.meta.env.DEV) {
+  testConnection();
+}
+
+// Helper to check if a session exists
+export const hasActiveSession = async (): Promise<boolean> => {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return !!session;
+  } catch (error) {
+    console.error('Error checking session:', error);
+    return false;
+  }
+};
+
+// Helper to refresh session
+export const refreshSession = async () => {
+  try {
+    const { data: { session }, error } = await supabase.auth.refreshSession();
+    if (error) throw error;
+    return session;
+  } catch (error) {
+    console.error('Error refreshing session:', error);
+    throw error;
+  }
+};
 
 // Export helper functions with better error handling
 export const signUp = async (email: string, password: string) => {
   console.log('Attempting signup for:', email);
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-  if (error) {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) throw error;
+    console.log('Signup successful:', data);
+    return data;
+  } catch (error) {
     console.error('Signup error:', error);
     throw error;
   }
-  console.log('Signup successful:', data);
-  return data;
 };
 
 export const signIn = async (email: string, password: string) => {
   console.log('Attempting signin for:', email);
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (error) {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    console.log('Sign in successful:', data);
+    return data;
+  } catch (error) {
     console.error('Sign in error:', error);
     throw error;
   }
-  console.log('Sign in successful:', data);
-  return data;
 };
 
 export const signOut = async () => {
   console.log('Attempting sign out');
-  const { error } = await supabase.auth.signOut();
-  if (error) {
+  try {
+    // First kill any active session
+    const { error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+
+    // Then sign out globally
+    const { error } = await supabase.auth.signOut({
+      scope: 'global'
+    });
+    if (error) throw error;
+
+    // Clear any stored tokens
+    window.localStorage.removeItem('supabase.auth.token');
+    window.sessionStorage.removeItem('supabase.auth.token');
+
+    console.log('Sign out successful');
+  } catch (error) {
     console.error('Sign out error:', error);
     throw error;
   }
-  console.log('Sign out successful');
 };
 
 // Storage helper functions with improved error handling
 export const uploadToStorage = async (bucket: string, path: string, file: File) => {
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file)
-  if (error) {
-    console.error('Upload error:', error)
-    throw error
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Upload error:', error);
+    throw error;
   }
-  return data
-}
+};
 
 export const getPublicUrl = (bucket: string, path: string) => {
-  const { data } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(path)
-  return data
-}
+  try {
+    const { data } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
+    return data;
+  } catch (error) {
+    console.error('Error getting public URL:', error);
+    throw error;
+  }
+};
 
 // Google OAuth sign in
 export const signInWithGoogle = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
-    },
-  });
+    });
 
-  if (error) {
+    if (error) throw error;
+    return data;
+  } catch (error) {
     console.error('Google sign in error:', error);
     throw error;
   }
-
-  return data;
 }; 
